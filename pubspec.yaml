@@ -1,0 +1,22 @@
+name: lucy_editor
+description: "A new Flutter package project."
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: '>=3.2.4 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
+  re_highlight:
+    path: ./re-highlight
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.1
+  path: ^1.8.2
