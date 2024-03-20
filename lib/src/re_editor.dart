@@ -18,8 +18,6 @@ import 'package:highlight/highlight.dart' as hi;
 import 'package:highlight/languages/javascript.dart' as js;
 import '../languages/javascript.dart';
 import './re_highlight.dart';
-import '../languages/javascript.dart';
-import '../lucy_editor.dart';
 
 part '_code_editable.dart';
 part '_code_extensions.dart';

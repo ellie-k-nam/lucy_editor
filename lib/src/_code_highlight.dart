@@ -361,7 +361,7 @@ class _CodeHighlightEngine {
     });
     emitter.finalize();
 
-    print('oh end');
+    //print('oh end');
     return HighlightResult(
         code: code,
         language: 'javascript',
