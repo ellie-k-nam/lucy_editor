@@ -1,7 +1,0 @@
-distributed actor Foobar {
-  distributed func baz() {
-  }
-
-  func qux() {
-  }
-}

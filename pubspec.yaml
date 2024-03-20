@@ -13,8 +13,6 @@ dependencies:
     sdk: flutter
   flutter_highlight: ^0.7.0
   highlight: ^0.7.0
-  re_highlight:
-    path: ./re-highlight
 
 dev_dependencies:
   flutter_test:

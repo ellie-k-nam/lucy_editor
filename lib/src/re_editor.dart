@@ -16,9 +16,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight.dart' as hi;
 import 'package:highlight/languages/javascript.dart' as js;
-import 'package:re_highlight/languages/javascript.dart';
-
-import 'package:re_highlight/re_highlight.dart';
+import '../languages/javascript.dart';
+import './re_highlight.dart';
+import '../languages/javascript.dart';
+import '../lucy_editor.dart';
 
 part '_code_editable.dart';
 part '_code_extensions.dart';

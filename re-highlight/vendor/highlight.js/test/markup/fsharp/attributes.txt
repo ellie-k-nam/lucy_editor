@@ -1,4 +1,0 @@
-// Strings and numbers are highlighted inside the attribute
-[<Foo>]
-[<Bar("bar"); Foo(1, 2)>]
-let x () = ()

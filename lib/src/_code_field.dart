@@ -1126,17 +1126,17 @@ class _CodeFieldRender extends RenderBox implements MouseTrackerAnnotation {
     return paragraphs;
   }
 
-  String _formatTime(int milliseconds) {
-    int seconds = (milliseconds / 1000).truncate();
-    int minutes = (seconds / 60).truncate();
-    int hours = (minutes / 60).truncate();
-
-    String hoursStr = (hours % 60).toString().padLeft(2, '0');
-    String minutesStr = (minutes % 60).toString().padLeft(2, '0');
-    String secondsStr = (seconds % 60).toString().padLeft(2, '0');
-
-    return '$hoursStr:$minutesStr:$secondsStr';
-  }
+  // String _formatTime(int milliseconds) {
+  //   int seconds = (milliseconds / 1000).truncate();
+  //   int minutes = (seconds / 60).truncate();
+  //   int hours = (minutes / 60).truncate();
+  //
+  //   String hoursStr = (hours % 60).toString().padLeft(2, '0');
+  //   String minutesStr = (minutes % 60).toString().padLeft(2, '0');
+  //   String secondsStr = (seconds % 60).toString().padLeft(2, '0');
+  //
+  //   return '$hoursStr:$minutesStr:$secondsStr';
+  // }
 
 
   IParagraph _buildParagraph(int index, [double? maxWidth]) {

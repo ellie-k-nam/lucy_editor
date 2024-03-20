@@ -1,6 +1,0 @@
-<span class="hljs-comment">$noop(\))</span>text
-<span class="hljs-comment">$noop(\()</span>text
-<span class="hljs-comment">$noop(\($noop(abc$func(\))\)xyz))</span>text
-<span class="hljs-comment">$noop(Multiline \(comment
-    $func($noop(test))
-)</span>text

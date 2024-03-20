@@ -1,9 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:re_editor_exmaple/editor_autocomplete.dart';
-import 'package:re_editor_exmaple/editor_basic_field.dart';
-import 'package:re_editor_exmaple/editor_json.dart';
-import 'package:re_editor_exmaple/editor_large_text.dart';
+import './editor_autocomplete.dart';
+import './editor_basic_field.dart';
+import './editor_json.dart';
+import './editor_large_text.dart';
 
 import 'editor_javascript.dart';
 

@@ -1,5 +1,0 @@
-foo = _undef
-bar
-
-booger = _unclass
-burger

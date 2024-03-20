@@ -5,7 +5,7 @@
 // ignore_for_file: unnecessary_raw_strings
 // ignore_for_file: use_raw_strings
 
-import 'package:re_highlight/re_highlight.dart';
+import 'package:lucy_editor/lucy_editor.dart';
 
 final javascript = Mode(
   refs: {

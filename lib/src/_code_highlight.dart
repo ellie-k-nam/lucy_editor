@@ -156,18 +156,18 @@ class _CodeHighlighter extends ValueNotifier<List<_HighlightResult>> {
   }
 
   void _processHighlight() {
-    final Stopwatch watch = Stopwatch();
-    watch.start();
+    // final Stopwatch watch = Stopwatch();
+    // watch.start();
     _engine.run(_controller.codeLines, (result) {
       value = result;
       if( value.isNotEmpty && value.first.nodes.isNotEmpty ) {
         _ready = true;
-        watch.stop();
-        final tmp = watch.elapsedMilliseconds;
-        final time = _formatTime(tmp);
-        print('----------------- _processHighlight -----------------');
-        print('$tmp : $time');
-        print('----------------- _processHighlight -----------------');
+        //watch.stop();
+        // final tmp = watch.elapsedMilliseconds;
+        // final time = _formatTime(tmp);
+        // print('----------------- _processHighlight -----------------');
+        // print('$tmp : $time');
+        // print('----------------- _processHighlight -----------------');
       }
     });
   }

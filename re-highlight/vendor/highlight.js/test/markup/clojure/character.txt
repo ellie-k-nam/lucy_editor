@@ -1,5 +1,0 @@
-\A
-\a
-\formfeed
-\u00DF
-\o303

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucy_editor/lucy_editor.dart';
-import 'package:re_editor_exmaple/find.dart';
-import 'package:re_editor_exmaple/menu.dart';
+import './find.dart';
+import './menu.dart';
 
 class LargeTextEditor extends StatefulWidget {
 

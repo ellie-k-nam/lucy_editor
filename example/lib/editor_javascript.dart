@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucy_editor/lucy_editor.dart';
-import 'package:re_editor_exmaple/find.dart';
-import 'package:re_editor_exmaple/menu.dart';
-import 'package:re_highlight/languages/javascript.dart';
-import 'package:re_highlight/styles/atom-one-light.dart';
+import './find.dart';
+import './menu.dart';
+import 'package:lucy_editor/languages/javascript.dart';
+import 'package:lucy_editor/styles/atom-one-light.dart';
 
 class JsEditor extends StatefulWidget {
 
