@@ -2,13 +2,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucy_editor/languages/dart.dart';
 import 'package:lucy_editor/lucy_editor.dart';
+import 'package:lucy_editor/styles/atom-one-light.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+
 import './find.dart';
 import './menu.dart';
-import 'package:lucy_editor/languages/dart.dart';
-import 'package:lucy_editor/styles/atom-one-light.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 const List<CodePrompt> _kStringPrompts = [
   CodeFieldPrompt(
@@ -202,7 +202,6 @@ class _DefaultCodeAutocompleteListView extends StatefulWidget implements Preferr
 }
 
 class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocompleteListView> {
-  late final AutoScrollController _controller;
 
   final pageStorageBucket = PageStorageBucket();
   final itemScrollController = ItemScrollController();
@@ -212,15 +211,6 @@ class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocomple
   final GlobalKey key = GlobalKey();
   late List<GlobalKey> _itemKeys;
   int selectedIndex = 0;
-
-  void onListViewScroll() async {
-
-    // print('------------- onListViewScroll ');
-    // if( _controller.offset <= _controller.position.maxScrollExtent &&
-    //    !_controller.position.outOfRange ) {
-    //   _controller.jumpTo(_controller.position.maxScrollExtent);
-    // }
-  }
 
   bool onKeyEvent(KeyEvent event) {
     final totalPrompt = widget.notifier.value.prompts.length;
@@ -238,13 +228,11 @@ class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocomple
         event.runtimeType==KeyDownEvent &&
         event.logicalKey.keyLabel=='Arrow Up') {
       selectedIndex = (selectedIndex - 1 + totalPrompt) % totalPrompt;
-      //print('--------onKeyEvent up --------- current : $selectedIndex -----------------');
 
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
                event.runtimeType==KeyDownEvent &&
                event.logicalKey.keyLabel=='Arrow Down') {
       selectedIndex = (selectedIndex + 1) % totalPrompt;
-      //print('---------onKeyEvent down -------- current : $selectedIndex -----------------');
     }
     if (!visiblePositions.contains(selectedIndex)) {
       final isStepDown = selectedIndex - previousSelectedIndex == 1;
@@ -259,13 +247,7 @@ class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocomple
 
   @override
   void initState() {
-    _controller = AutoScrollController(
-        viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
-        axis: Axis.vertical,
-        suggestedRowHeight: _DefaultCodeAutocompleteListView.kItemHeight
-    );
     HardwareKeyboard.instance.addHandler(onKeyEvent);
-    _controller.addListener(onListViewScroll);
     widget.notifier.addListener(_onValueChanged);
     super.initState();
   }
@@ -273,7 +255,6 @@ class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocomple
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(onKeyEvent);
-    _controller.removeListener(onListViewScroll);
     widget.notifier.removeListener(_onValueChanged);
     _node.dispose();
     super.dispose();

@@ -185,9 +185,8 @@ class CodeEditor extends StatefulWidget {
     _editingController = _CodeLineEditingControllerDelegate();
     _editingController!.delegate =  controller;// ?? CodeLineEditingController();
     findController = CodeFindController(_editingController!);
-    controller!.findController = findController;
-    print('test');
-    //_editingController.findController ??= findController;
+    controller.findController = findController;
+    _editingController!.findController ??= findController;
 
   }
 
@@ -310,9 +309,6 @@ class _CodeEditorState extends State<CodeEditor> {
     super.initState();
     _editorKey = GlobalKey();
     _focusNode = widget.controller.focusNode = widget.focusNode ?? FocusNode();
-    // _focusNode.addListener(() {
-    //   print('focus changed => ${_focusNode.hasFocus}');
-    // });
 
     _editingController = widget._editingController!;
     //_editingController.delegate =  widget.controller ?? CodeLineEditingController();
@@ -486,7 +482,6 @@ class _CodeEditorState extends State<CodeEditor> {
         autofocus: autofocus,
         focusNode: _focusNode,
         onKeyEvent: (node, event) {
-          //print('##### _CodeEditable event.runtimeType : ${event.runtimeType}');
           if( event.logicalKey == LogicalKeyboardKey.backspace &&
               event.runtimeType==KeyDownEvent ) {
             _editingController.deleteBackward();
@@ -496,13 +491,6 @@ class _CodeEditorState extends State<CodeEditor> {
             _editingController.applyNewLine();
             return KeyEventResult.handled;
           }
-          // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
-          //   _editingController.deleteBackward();
-          //   return KeyEventResult.handled;
-          // } else if (event.isKeyPressed(LogicalKeyboardKey.enter)) {
-          //   _editingController.applyNewLine();
-          //   return KeyEventResult.handled;
-          // }
           return KeyEventResult.ignored;
         },
         includeSemantics: false,

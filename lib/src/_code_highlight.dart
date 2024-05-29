@@ -156,18 +156,10 @@ class _CodeHighlighter extends ValueNotifier<List<_HighlightResult>> {
   }
 
   void _processHighlight() {
-    // final Stopwatch watch = Stopwatch();
-    // watch.start();
     _engine.run(_controller.codeLines, (result) {
       value = result;
       if( value.isNotEmpty && value.first.nodes.isNotEmpty ) {
         _ready = true;
-        //watch.stop();
-        // final tmp = watch.elapsedMilliseconds;
-        // final time = _formatTime(tmp);
-        // print('----------------- _processHighlight -----------------');
-        // print('$tmp : $time');
-        // print('----------------- _processHighlight -----------------');
       }
     });
   }
@@ -222,8 +214,6 @@ class _CodeHighlightEngine {
 
   void run(CodeLines codes, IsolateCallback<List<_HighlightResult>> callback) {
     final Highlight? highlight = _highlight;
-    // if( null!=highlight )
-    //   print('_CodeHighlightEngine run  -------------------${highlight.listLanguages().first}');
 
     if (highlight == null) {
       callback(const []);
@@ -259,8 +249,6 @@ class _CodeHighlightEngine {
       total += length;
     }
     final String code = payload.codes.asString(TextLineBreak.lf, false);
-    // print('isolate run code -------------------${code.isEmpty}');
-    // print('canHighlight -------------------$canHighlight');
     final HighlightResult result;
     if (!canHighlight) {
       result = payload.highlight.justTextHighlightResult(code);
@@ -273,12 +261,6 @@ class _CodeHighlightEngine {
     }
     final _HighlightLineRenderer renderer = _HighlightLineRenderer();
     result.render(renderer);
-    // renderer.lineResults.forEach((el) {
-    //   el.nodes.forEach((node) {
-    //     print('-------------------> ${node.value} / ${node.className}');
-    //   });
-    // });
-    //print('isolate run renderer.lineResults -------------------${renderer.lineResults}');
     return renderer.lineResults;
   }
 
@@ -361,7 +343,6 @@ class _CodeHighlightEngine {
     });
     emitter.finalize();
 
-    //print('oh end');
     return HighlightResult(
         code: code,
         language: 'javascript',

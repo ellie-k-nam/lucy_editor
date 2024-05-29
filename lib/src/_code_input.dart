@@ -143,9 +143,6 @@ class _CodeInputController extends ChangeNotifier implements DeltaTextInputClien
     if (!smartChange) {
       _remoteEditingValue = newValue;
     }
-    // print('update text ${newValue.text}');
-    // print('update selection ${newValue.selection}');
-    // print('update composing ${newValue.composing}');
     if (newValue.usePrefix) {
       if (newValue.selection.isCollapsed && newValue.selection.start == 0) {
         _controller.deleteBackward();
@@ -155,7 +152,6 @@ class _CodeInputController extends ChangeNotifier implements DeltaTextInputClien
     } else {
       _controller.edit(newValue);
     }
-    // _Trace.end('updateEditingValue all');
   }
 
   @override
@@ -217,9 +213,6 @@ class _CodeInputController extends ChangeNotifier implements DeltaTextInputClien
         composing: TextRange.empty
       );
     }
-    // print('post text ${localValue.text}');
-    // print('post selection ${localValue.selection}');
-    // print('post composing ${localValue.composing}');
     _remoteEditingValue = localValue;
 
     _textInputConnection!.setEditingState(localValue);
@@ -268,7 +261,6 @@ class _CodeInputController extends ChangeNotifier implements DeltaTextInputClien
   }
 
   void _onFocusChanged() {
-    //print('-----TextInputController -> onFocus Changed (${_focusNode.hasFocus})');
     _openOrCloseInputConnectionIfNeeded();
   }
 

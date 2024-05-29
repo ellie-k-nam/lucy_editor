@@ -312,7 +312,6 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
   }
 
   void _onFocusChanged() {
-    //print('widget.focusNode.hasFocus => ${widget.focusNode.hasFocus}');
     _updateCursorState();
     _updateAutoCompleteState(false);
     updateKeepAlive();
@@ -338,7 +337,6 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
     } else {
       _updateAutoCompleteState(false);
     }
-    //print('------------- _CodeEditable  _onCodeInputChanged ${widget.focusNode.hasFocus}');
     _updateCursorState();
     setState(() {
     });
@@ -370,9 +368,6 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
   }
 
   void _updateCursorState() {
-    final hasFocus = widget.focusNode.hasFocus;
-    //print( '_updateCursorState hasFocus -> $hasFocus' );
-    //print('========================================================');
     if ( widget.focusNode.hasFocus && (!widget.readOnly || widget.showCursorWhenReadOnly)) {
       _cursorController.startBlink();
     } else {
