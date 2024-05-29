@@ -268,6 +268,7 @@ class _CodeInputController extends ChangeNotifier implements DeltaTextInputClien
   }
 
   void _onFocusChanged() {
+    //print('-----TextInputController -> onFocus Changed (${_focusNode.hasFocus})');
     _openOrCloseInputConnectionIfNeeded();
   }
 

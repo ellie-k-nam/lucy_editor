@@ -11,9 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  collection: ^1.17.1  
+  collection: ^1.17.1
+#  lucy_editor: ^1.0.0
   lucy_editor:
-    path: ../  
+    path: ../
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

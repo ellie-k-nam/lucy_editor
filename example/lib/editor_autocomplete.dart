@@ -7,6 +7,8 @@ import './find.dart';
 import './menu.dart';
 import 'package:lucy_editor/languages/dart.dart';
 import 'package:lucy_editor/styles/atom-one-light.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 const List<CodePrompt> _kStringPrompts = [
   CodeFieldPrompt(
@@ -126,7 +128,7 @@ class _AutoCompleteEditorState extends State<AutoCompleteEditor> {
           word: 'hello',
           type: 'void',
           parameters: {
-            'value': 'String',
+            'value-': 'String',
           }
         )
       ],
@@ -182,7 +184,7 @@ class _DefaultCodeAutocompleteListView extends StatefulWidget implements Preferr
   final ValueNotifier<CodeAutocompleteEditingValue> notifier;
   final ValueChanged<CodeAutocompleteEditingValue> onSelected;
 
-  const _DefaultCodeAutocompleteListView({
+  _DefaultCodeAutocompleteListView({
     required this.notifier,
     required this.onSelected,
   });
@@ -200,66 +202,148 @@ class _DefaultCodeAutocompleteListView extends StatefulWidget implements Preferr
 }
 
 class _DefaultCodeAutocompleteListViewState extends State<_DefaultCodeAutocompleteListView> {
+  late final AutoScrollController _controller;
+
+  final pageStorageBucket = PageStorageBucket();
+  final itemScrollController = ItemScrollController();
+  final itemPositionsListener = ItemPositionsListener.create();
+
+  final FocusNode _node = FocusNode();
+  final GlobalKey key = GlobalKey();
+  late List<GlobalKey> _itemKeys;
+  int selectedIndex = 0;
+
+  void onListViewScroll() async {
+
+    // print('------------- onListViewScroll ');
+    // if( _controller.offset <= _controller.position.maxScrollExtent &&
+    //    !_controller.position.outOfRange ) {
+    //   _controller.jumpTo(_controller.position.maxScrollExtent);
+    // }
+  }
+
+  bool onKeyEvent(KeyEvent event) {
+    final totalPrompt = widget.notifier.value.prompts.length;
+    final previousSelectedIndex = selectedIndex;
+    final visiblePositions = itemPositionsListener.itemPositions.value
+        .where((item) {
+      final bool isTopVisible = item.itemLeadingEdge >= 0;
+      final bool isBottomVisible = item.itemTrailingEdge <= 1;
+      return isTopVisible && isBottomVisible;
+    })
+        .map((e) => e.index)
+        .toList();
+
+    if( event.logicalKey == LogicalKeyboardKey.arrowUp &&
+        event.runtimeType==KeyDownEvent &&
+        event.logicalKey.keyLabel=='Arrow Up') {
+      selectedIndex = (selectedIndex - 1 + totalPrompt) % totalPrompt;
+      //print('--------onKeyEvent up --------- current : $selectedIndex -----------------');
+
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+               event.runtimeType==KeyDownEvent &&
+               event.logicalKey.keyLabel=='Arrow Down') {
+      selectedIndex = (selectedIndex + 1) % totalPrompt;
+      //print('---------onKeyEvent down -------- current : $selectedIndex -----------------');
+    }
+    if (!visiblePositions.contains(selectedIndex)) {
+      final isStepDown = selectedIndex - previousSelectedIndex == 1;
+      if (isStepDown && selectedIndex < totalPrompt - 1) {
+        itemScrollController.jumpTo(index: selectedIndex + 1, alignment: 1);
+      } else {
+        itemScrollController.jumpTo(index: selectedIndex);
+      }
+    }
+    return false;
+  }
 
   @override
   void initState() {
+    _controller = AutoScrollController(
+        viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
+        axis: Axis.vertical,
+        suggestedRowHeight: _DefaultCodeAutocompleteListView.kItemHeight
+    );
+    HardwareKeyboard.instance.addHandler(onKeyEvent);
+    _controller.addListener(onListViewScroll);
     widget.notifier.addListener(_onValueChanged);
     super.initState();
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(onKeyEvent);
+    _controller.removeListener(onListViewScroll);
     widget.notifier.removeListener(_onValueChanged);
+    _node.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints.loose(widget.preferredSize),
-      decoration: BoxDecoration(
-        color: Colors.grey,
-        borderRadius: BorderRadius.circular(6)
+    return PageStorage(
+      bucket: pageStorageBucket,
+      child: Container(
+        constraints: BoxConstraints.tight(widget.preferredSize),
+        decoration: BoxDecoration(
+          color: Color.fromARGB(255, 50, 50, 50) ,
+          borderRadius: BorderRadius.circular(6)
+        ),
+        child: Focus(child: buildListView()) ,
       ),
-      child: ListView.builder(
-        itemCount: widget.notifier.value.prompts.length,
-        scrollDirection: Axis.vertical,
-        itemBuilder:(context, index) {
-          final CodePrompt prompt = widget.notifier.value.prompts[index];
-          final BorderRadius radius = BorderRadius.only(
-            topLeft: index == 0 ? const Radius.circular(5) : Radius.zero,
-            topRight: index == 0 ? const Radius.circular(5) : Radius.zero,
-            bottomLeft: index == widget.notifier.value.prompts.length - 1 ? const Radius.circular(5) : Radius.zero,
-            bottomRight: index == widget.notifier.value.prompts.length - 1 ? const Radius.circular(5) : Radius.zero,
-          );
-          return InkWell(
-            borderRadius: radius,
-            onTap: () {
-              widget.onSelected(widget.notifier.value.copyWith(
-                index: index
-              ));
-            },
-            child: Container(
-              width: double.infinity,
-              height: _DefaultCodeAutocompleteListView.kItemHeight,
-              padding: const EdgeInsets.only(
-                left: 5,
-                right: 5
-              ),
-              alignment: Alignment.centerLeft,
-              decoration: BoxDecoration(
-                color: index == widget.notifier.value.index ? Color.fromARGB(255, 255, 140, 0) : null,
-                borderRadius: radius
-              ),
-              child: RichText(
-                text: prompt.createSpan(context, widget.notifier.value.word),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            )
-          );
+    );
+  }
+
+  Widget buildListView() {
+    final items = widget.notifier.value.prompts;
+    return ScrollablePositionedList.builder(
+      shrinkWrap: true,
+      physics: const ClampingScrollPhysics(),
+      itemScrollController: itemScrollController,
+      itemPositionsListener: itemPositionsListener,
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final CodePrompt prompt = widget.notifier.value.prompts[index];
+        final BorderRadius radius = BorderRadius.only(
+          topLeft: index == 0 ? const Radius.circular(5) : Radius.zero,
+          topRight: index == 0 ? const Radius.circular(5) : Radius.zero,
+          bottomLeft: index == items.length - 1 ? const Radius.circular(5) : Radius.zero,
+          bottomRight: index == items.length - 1 ? const Radius.circular(5) : Radius.zero,
+        );
+        return buildInkWell(radius, index, prompt, context);
+      },
+
+    );
+  }
+
+
+  Widget buildInkWell(BorderRadius radius, int index, CodePrompt prompt, BuildContext context) {
+    return InkWell(
+        borderRadius: radius,
+        onTap: () {
+          widget.onSelected(widget.notifier.value.copyWith(
+              index: index
+          ));
         },
-      )
+        child: Container(
+          width: double.infinity,
+          height: _DefaultCodeAutocompleteListView.kItemHeight,
+          padding: const EdgeInsets.only(
+              left: 5,
+              right: 5
+          ),
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            //  color: index == widget.notifier.value.index ? Color.fromARGB(255, 255, 140, 0) : null,
+              color: index == widget.notifier.value.index ? Color.fromARGB(255, 120, 120, 120) : null,
+              borderRadius: radius
+          ),
+          child: RichText(
+            text: prompt.createSpan(context, widget.notifier.value.word),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        )
     );
   }
 
@@ -288,7 +372,7 @@ extension _CodePromptExtension on CodePrompt {
           TextSpan(
             text: ' ${prompt.type}',
             style: style.copyWith(
-              color: Colors.cyan
+              color: Colors.white70
             )
           )
         ]
@@ -301,7 +385,7 @@ extension _CodePromptExtension on CodePrompt {
           TextSpan(
             text: '(...) -> ${prompt.type}',
             style: style.copyWith(
-              color: Colors.cyan
+              color: Colors.white70
             )
           )
         ]

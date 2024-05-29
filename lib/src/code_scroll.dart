@@ -4,7 +4,8 @@ typedef CodeScrollbarBuilder = Widget Function(BuildContext context, Widget chil
 
 class CodeScrollController {
 
-  final ScrollController verticalScroller;
+  final groupScrollController = LinkedScrollControllerGroup();
+  late ScrollController verticalScroller = groupScrollController.addAndGet();
   final ScrollController horizontalScroller;
 
   GlobalKey? _editorKey;
@@ -12,8 +13,11 @@ class CodeScrollController {
   CodeScrollController({
     ScrollController? verticalScroller,
     ScrollController? horizontalScroller,
-  }) : verticalScroller = verticalScroller ?? ScrollController(),
-    horizontalScroller = horizontalScroller ?? ScrollController();
+  }) : horizontalScroller = horizontalScroller ?? ScrollController()  {
+    //verticalScroller = verticalScroller ?? groupScrollController.addAndGet();
+  }
+
+  ScrollController getScrollerController() => groupScrollController.addAndGet();
 
   void makeCenterIfInvisible(CodeLinePosition position) {
     _render?.makePositionCenterIfInvisible(position);

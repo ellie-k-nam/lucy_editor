@@ -197,3 +197,197 @@ class DefaultCodeChunkIndicatorPainter implements CodeChunkIndicatorPainter {
   }
 
 }
+
+class DefaultIssueIndicator extends StatefulWidget {
+  final CodeLineEditingController _controller;
+  final CodeIndicatorValueNotifier _notifier;
+  int _allLineCount;
+
+  DefaultIssueIndicator({super.key,
+        required CodeLineEditingController controller,
+        required CodeIndicatorValueNotifier notifier,
+  }): _controller = controller,
+      _notifier = notifier,
+      _allLineCount = controller.lineCount;
+
+
+  @override
+  DefaultIssueIndicatorState createState() => DefaultIssueIndicatorState();
+}
+
+class DefaultIssueIndicatorState extends State<DefaultIssueIndicator> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    widget._controller.addListener(_onCodeLineChanged);
+    widget._notifier.addListener(_rebuild);
+    _scrollController = widget._controller.scrollController!.getScrollerController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    widget._controller.removeListener(_onCodeLineChanged);
+    widget._notifier.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => WidgetsBinding.instance.addPostFrameCallback((timeStamp) =>
+      setState(() {}));
+
+  void _onCodeLineChanged() {
+    widget._allLineCount = widget._controller.lineCount;
+    _rebuild();
+  }
+  @override
+  Widget build(BuildContext context) {
+
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        scrollDirection: Axis.vertical,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Builder(
+            //animation: widget._controller,
+            builder: _buildOnChange,
+          ),
+        ),
+      ),
+    );
+
+    // return Scrollbar(
+    //   controller: _scrollController,
+    //   thumbVisibility: false,
+    //   child: SingleChildScrollView(
+    //     controller: _scrollController,
+    //     scrollDirection: Axis.vertical,
+    //     child: SizedBox(
+    //       height: MediaQuery.of(context).size.height,
+    //       child: Builder(
+    //         //animation: widget._controller,
+    //         builder: _buildOnChange,
+    //       ),
+    //     ),
+    //   ),
+    // );
+
+    // return SingleChildScrollView(
+    //   controller: _scrollController,
+    //   scrollDirection: Axis.vertical,
+    //   child: SizedBox(
+    //     height: MediaQuery.of(context).size.height,
+    //     child: Builder(
+    //       //animation: widget._controller,
+    //       builder: _buildOnChange,
+    //     ),
+    //   ),
+    // );
+  }
+
+  Widget _buildOnChange(BuildContext context) {
+
+    final CodeIndicatorValue? value = widget._notifier.value;
+    if (value == null || value.paragraphs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    int firstLineIndex = widget._controller.index2lineIndex(value.paragraphs.first.index);
+    final tableRows = List.generate(value.paragraphs.length,
+      (i) => TableRow(
+        children: [
+          SizedBox(height: value.paragraphs[i].height),
+          // Container(height: value.paragraphs[i].height,
+          //   color: Colors.amber,
+          //   child: Text(i.toString()),),
+        ],
+        )
+    );
+
+    for (final issue in widget._controller.analysisResult.issues) {
+      if (issue.line >= widget._controller.codeLines.length) {
+        continue;
+      }
+      final lineIndex = widget._controller.lineIndex2Index(issue.line).index;
+      if( lineIndex >= tableRows.length ) {
+        continue;
+      }
+      final style = TextStyle(
+        fontSize: DefaultStyles.errorPopupTextSize,
+        backgroundColor: DefaultStyles.backgroundColor,
+        fontStyle: DefaultStyles.fontStyle,
+      );
+      tableRows[lineIndex].children[0] = GutterErrorWidget(
+        issue,
+        style,
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: widget._controller,
+      builder: (BuildContext ctx, Widget? child) {
+        return Container(
+          padding: const EdgeInsets.only(left: 3, top: 8, bottom: 8),
+          width: 16,
+          child: Table(
+            columnWidths: const {
+              0: FixedColumnWidth(16.0),
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: tableRows,
+          ),
+        );
+      },
+    );
+
+    // return Container(
+    //   padding: const EdgeInsets.only(top: 8, bottom: 8),
+    //   width: 16,
+    //   child: Table(
+    //     columnWidths: const {
+    //       0: FixedColumnWidth(16.0),
+    //     },
+    //     defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+    //     children: tableRows,
+    //   ),
+    // );
+    //
+    // return Container(
+    //   width: 16,
+    //   padding: const EdgeInsets.only(top: 8, bottom: 8),
+    //   height: MediaQuery.of(context).size.height,
+    //   child: ListView.builder(
+    //       scrollDirection: Axis.vertical,
+    //       controller: _scrollController,
+    //       itemCount: value.paragraphs.length,
+    //       itemBuilder: (context, index) => buildItem(context, index, value)),
+    // );
+  }
+
+  // Widget buildItem(BuildContext ctx, int idx, CodeIndicatorValue value) {
+  //   print('------------- buildItem [ $idx ] -------------');
+  //
+  //   final codes = widget._controller.codeLines;
+  //
+  //   final code = codes[idx];
+  //
+  //
+  //   final child = Container(height: value.paragraphs[idx].height,
+  //             color: Colors.amber,
+  //             child: Text(idx.toString()),);
+  //
+  //   return Container(
+  //     width: 16,
+  //     child: child,
+  //   );
+  // }
+}
+
+class DefaultStyles {
+  static final backgroundColor = Colors.grey.shade900;
+  static final textColor = Colors.grey.shade200;
+  static const errorPopupTextSize = 14.0;
+  static const fontStyle = FontStyle.normal;
+}

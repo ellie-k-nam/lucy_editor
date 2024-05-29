@@ -90,6 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
+                  color: Colors.transparent,
                   border: Border.all(
                     color: Colors.grey
                   )

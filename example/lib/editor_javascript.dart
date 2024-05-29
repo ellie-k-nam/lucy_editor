@@ -5,6 +5,7 @@ import './find.dart';
 import './menu.dart';
 import 'package:lucy_editor/languages/javascript.dart';
 import 'package:lucy_editor/styles/atom-one-light.dart';
+import 'package:lucy_editor/styles/atom-one-dark.dart';
 
 class JsEditor extends StatefulWidget {
 
@@ -59,10 +60,10 @@ class _JsEditorState extends State<JsEditor> {
       },
       findBuilder: (context, controller, readOnly) => CodeFindPanelView(controller: controller, readOnly: readOnly),
       toolbarController: const ContextMenuControllerImpl(),
-      sperator: Container(
-          width: 1,
-          color: Colors.blue
-      ),
+      // sperator: Container(
+      //     width: 0,
+      //     color: Colors.blue
+      // ),
     );
   }
 

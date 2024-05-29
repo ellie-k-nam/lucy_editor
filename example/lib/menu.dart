@@ -58,6 +58,14 @@ class ContextMenuControllerImpl implements SelectionToolbarController {
             controller.paste();
           },
         ),
+        ContextMenuItemWidget(
+          text: 'Collapse',
+          onTap: () {
+            final prevText = controller.preValue?.codeLines.asString(controller.options.lineBreak);
+            final changed = controller.text != prevText;
+            print( 'changed ? ${changed ? 'Y' : 'N'}');
+          },
+        ),
       ]
     );
   }

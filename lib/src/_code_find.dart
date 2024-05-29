@@ -3,6 +3,8 @@ part of re_editor;
 class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements CodeFindController {
 
   final CodeLineEditingController controller;
+  final SearchSettingsController settingsController =
+  SearchSettingsController();
   late final _IsolateTasker<_CodeFindPayload, CodeFindResult?> _tasker;
   late final TextEditingController _findInputController;
   late final FocusNode _findInputFocusNode;
@@ -19,7 +21,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
     _replaceInputController = TextEditingController();
     _replaceInputFocusNode = FocusNode();
     _shouldNotUpdateResults = false;
-    _updateResult();
+    //_updateResult();
   }
 
   @override
@@ -378,6 +380,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
           searching: false
         );
       }
+      findInputFocusNode.requestFocus();
     });
   }
 

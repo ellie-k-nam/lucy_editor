@@ -46,10 +46,12 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   factory CodeLineEditingController({
     CodeLines codeLines = _kInitialCodeLines,
     CodeLineOptions options = const CodeLineOptions(),
+    analysisResult = const AnalysisResult(issues: []),
     CodeLineSpanBuilder? spanBuilder,
   }) => _CodeLineEditingControllerImpl(
     codeLines: codeLines,
     options: options,
+    analysisResult: analysisResult,
     spanBuilder: spanBuilder,
   );
 
@@ -67,6 +69,15 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   factory CodeLineEditingController.fromTextAsync(String? text, [
     CodeLineOptions options = const CodeLineOptions()
   ]) => _CodeLineEditingControllerImpl.fromTextAsync(text, options);
+
+  AnalysisResult get analysisResult;
+  set analysisResult(AnalysisResult analysisResult);
+
+  CodeFindController? get findController;
+  set findController(CodeFindController? controller);
+
+  CodeScrollController? get scrollController;
+  set scrollController(CodeScrollController? controller);
 
   /// Set the current editor codes.
   ///
@@ -100,6 +111,9 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   /// actions, not during the build, layout, or paint phases.
   set composing(TextRange newComposing);
 
+  StreamController get timerStream;
+
+  _CodeFieldRender get render;
   /// Get the previous editing value.
   CodeLineEditingValue? get preValue;
 
@@ -155,6 +169,16 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
 
   /// Whether the redo action can be performed.
   bool get canRedo;
+
+  bool get isCodeChanged;
+
+  VoidCallback? get codeChangedCallback;
+
+  set codeChangedCallback(VoidCallback? callback);
+
+  FocusNode? get focusNode;
+
+  set focusNode(FocusNode? node);
 
   /// Set the current editor text.
   ///
@@ -340,9 +364,12 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   /// be recorded in the undo history.
   void runRevocableOp(VoidCallback op);
 
+  void changeAnalysisResult(AnalysisResult result);
   /// Builds [TextSpan] from current editing value.
   /// This can override the code syntax highlighting styles.
   TextSpan? buildTextSpan(int index, TextStyle baseStyle);
+
+  void scheduleAnalysis();
 }
 
 class CodeLine {

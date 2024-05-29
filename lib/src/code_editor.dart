@@ -156,11 +156,11 @@ class CodeEditorStyle {
 /// but may not work for some languages (such as python).
 class CodeEditor extends StatefulWidget {
 
-  const CodeEditor({
+  CodeEditor({
     super.key,
-    this.controller,
+    required this.controller,
     this.scrollController,
-    this.findController,
+    //this.findController,
     this.toolbarController,
     this.onChanged,
     this.style,
@@ -181,16 +181,26 @@ class CodeEditor extends StatefulWidget {
     this.focusNode,
     this.chunkAnalyzer,
     this.commentFormatter,
-  }) : assert(indicatorBuilder != null || (indicatorBuilder == null && sperator == null));
+  }) : assert(indicatorBuilder != null || (indicatorBuilder == null && sperator == null)) {
+    _editingController = _CodeLineEditingControllerDelegate();
+    _editingController!.delegate =  controller;// ?? CodeLineEditingController();
+    findController = CodeFindController(_editingController!);
+    controller!.findController = findController;
+    print('test');
+    //_editingController.findController ??= findController;
+
+  }
 
   /// Similar to [TextField], editor uses [CodeLineEditingController] as the content controller.
-  final CodeLineEditingController? controller;
+  final CodeLineEditingController controller;
+
+  _CodeLineEditingControllerDelegate? _editingController;
 
   /// Controls horizontal and vertical scrolling.
   final CodeScrollController? scrollController;
 
   /// Controls the search widget and actions.
-  final CodeFindController? findController;
+  late CodeFindController findController;
 
   /// Controls the selection toolbar.
   final SelectionToolbarController? toolbarController;
@@ -299,12 +309,18 @@ class _CodeEditorState extends State<CodeEditor> {
   void initState() {
     super.initState();
     _editorKey = GlobalKey();
-    _focusNode = widget.focusNode ?? FocusNode();
-    _editingController = _CodeLineEditingControllerDelegate();
-    _editingController.delegate =  widget.controller ?? CodeLineEditingController();
+    _focusNode = widget.controller.focusNode = widget.focusNode ?? FocusNode();
+    // _focusNode.addListener(() {
+    //   print('focus changed => ${_focusNode.hasFocus}');
+    // });
+
+    _editingController = widget._editingController!;
+    //_editingController.delegate =  widget.controller ?? CodeLineEditingController();
     _findController = widget.findController ?? CodeFindController(_editingController);
+    //_editingController.findController = _findController;
     _scrollController = widget.scrollController ?? CodeScrollController();
     _scrollController.bindEditor(_editorKey);
+    _editingController.scrollController = _scrollController;
     _findController.addListener(_updateWidget);
     _chunkController = CodeChunkController(_editingController, widget.chunkAnalyzer ?? const DefaultCodeChunkAnalyzer());
 
@@ -380,7 +396,7 @@ class _CodeEditorState extends State<CodeEditor> {
       if (oldWidget.controller == null) {
         _editingController.delegate.dispose();
       }
-      _editingController.delegate = widget.controller ?? CodeLineEditingController();
+      _editingController.delegate = widget.controller;// ?? CodeLineEditingController();
       _editingController.bindEditor(_editorKey);
     }
     if (oldWidget.findController != widget.findController || oldWidget.controller != widget.controller) {
@@ -469,14 +485,24 @@ class _CodeEditorState extends State<CodeEditor> {
       child = Focus(
         autofocus: autofocus,
         focusNode: _focusNode,
-        onKey: (node, event) {
-          if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+        onKeyEvent: (node, event) {
+          //print('##### _CodeEditable event.runtimeType : ${event.runtimeType}');
+          if( event.logicalKey == LogicalKeyboardKey.backspace &&
+              event.runtimeType==KeyDownEvent ) {
             _editingController.deleteBackward();
             return KeyEventResult.handled;
-          } else if (event.isKeyPressed(LogicalKeyboardKey.enter)) {
+          } else if( event.logicalKey == LogicalKeyboardKey.enter &&
+              event.runtimeType==KeyDownEvent ) {
             _editingController.applyNewLine();
             return KeyEventResult.handled;
           }
+          // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+          //   _editingController.deleteBackward();
+          //   return KeyEventResult.handled;
+          // } else if (event.isKeyPressed(LogicalKeyboardKey.enter)) {
+          //   _editingController.applyNewLine();
+          //   return KeyEventResult.handled;
+          // }
           return KeyEventResult.ignored;
         },
         includeSemantics: false,

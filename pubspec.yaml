@@ -14,6 +14,10 @@ dependencies:
   flutter_highlight: ^0.7.0
   highlight: ^0.7.0
   collection: ^1.17.1
+  http: ^1.2.1
+  equatable: ^2.0.3
+  linked_scroll_controller: ^0.2.0
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:

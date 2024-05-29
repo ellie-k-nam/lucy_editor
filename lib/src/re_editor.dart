@@ -16,8 +16,12 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight.dart' as hi;
 import 'package:highlight/languages/javascript.dart' as js;
+import 'package:linked_scroll_controller/linked_scroll_controller.dart';
+import 'package:lucy_editor/src/search/settings_controller.dart';
 import '../languages/javascript.dart';
 import './re_highlight.dart';
+import 'analyzer/models/analysis_result.dart';
+import 'analyzer/models/error.dart';
 
 part '_code_editable.dart';
 part '_code_extensions.dart';

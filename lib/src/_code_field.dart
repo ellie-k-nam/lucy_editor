@@ -740,6 +740,7 @@ class _CodeFieldRender extends RenderBox implements MouseTrackerAnnotation {
 
   @override
   void performLayout() {
+    final size1 = constraints.biggest;
     // _Trace.begin('CodeField performLayout');
     assert(constraints.maxWidth > 0 && constraints.maxWidth != double.infinity,
       '_CodeField should have an explicit width.');

@@ -10,8 +10,12 @@ const int _kUnitCodeWhitespace = 0x20;
 const List<String> _kClosures = ['{}', '[]', '()'];
 const List<String> _kClosureAndQuates = ['{}', '[]', '()', '\'\'', '""', '``'];
 
-class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue> implements CodeLineEditingController {
+class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
+    implements CodeLineEditingController {
 
+  final StreamController _timerStream = StreamController<bool>.broadcast();
+  CodeFindController? _findController;
+  CodeScrollController? _scrollControler;
   @override
   final CodeLineOptions options;
   final CodeLineSpanBuilder? spanBuilder;
@@ -19,14 +23,28 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   late int _preEditLineIndex;
   CodeLineEditingValue? _preValue;
   GlobalKey? _editorKey;
+  VoidCallback? _codeChangedCallback;
+  FocusNode? _focusNode;
+  late AnalysisResult _analysisResult;
+  String _lastAnalyzedText = '';
+  Timer? _debounce;
+  late VoidCallback _changeCallback;
 
   _CodeLineEditingControllerImpl({
     required CodeLines codeLines,
     required this.options,
+    required analysisResult,
     this.spanBuilder,
   }) : super(CodeLineEditingValue(codeLines: codeLines)) {
     _cache = _CodeLineEditingCache(this);
     _preEditLineIndex = -1;
+    _analysisResult = analysisResult;
+
+    _changeCallback = () {
+      _codeChangedCallback?.call();
+    };
+    addListener(_changeCallback);
+    addListener(scheduleAnalysis);
   }
 
   factory _CodeLineEditingControllerImpl.fromText(String? text, [
@@ -34,7 +52,8 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   ]) {
     return _CodeLineEditingControllerImpl(
       codeLines: CodeLineUtils.toCodeLines(text ?? ''),
-      options: options
+      options: options,
+      analysisResult: const AnalysisResult(issues: []),
     );
   }
 
@@ -48,6 +67,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
      return _CodeLineEditingControllerImpl(
       codeLines: codeLines,
       options: const CodeLineOptions(),
+       analysisResult: const AnalysisResult(issues: []),
     );
   }
 
@@ -56,11 +76,31 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   ]) {
     final _CodeLineEditingControllerImpl controller = _CodeLineEditingControllerImpl(
       codeLines: _kInitialCodeLines,
-      options: options
+      options: options,
+      analysisResult: const AnalysisResult(issues: []),
     );
     CodeLineUtils.toCodeLinesAsync(text ?? '').then((value) => controller.codeLines = value);
     return controller;
   }
+
+  @override
+  AnalysisResult get analysisResult => _analysisResult;
+
+  @override
+  set analysisResult(AnalysisResult analysisResult) => _analysisResult = analysisResult;
+
+  @override
+  CodeFindController? get findController => _findController;
+
+  @override
+  set findController(CodeFindController? controller) => _findController = controller;
+
+  @override
+  CodeScrollController? get scrollController => _scrollControler;
+
+  @override
+  set scrollController(CodeScrollController? controller) =>
+    _scrollControler = controller;
 
   @override
   set value(CodeLineEditingValue value) {
@@ -88,6 +128,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
       composing: newComposing
     );
   }
+  _CodeFieldRender get render => _editorKey?.currentContext?.findRenderObject() as _CodeFieldRender;
 
   TextLineBreak get lineBreak => options.lineBreak;
 
@@ -122,6 +163,12 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
 
   @override
   String get text => codeLines.asString(lineBreak);
+
+  @override
+  FocusNode? get focusNode => _focusNode;
+
+  @override
+  set focusNode(FocusNode? node) => _focusNode = node;
 
   @override
   String get selectedText {
@@ -181,6 +228,15 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
 
   @override
   bool get canRedo => _cache.canRedo;
+
+  @override
+  bool get isCodeChanged => _cache.isCodeChanged;
+
+  @override
+  VoidCallback? get codeChangedCallback => _codeChangedCallback;
+
+  @override
+  set codeChangedCallback(VoidCallback? callback) => _codeChangedCallback = callback;
 
   @override
   set text(String value) {
@@ -867,8 +923,11 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _editorKey = null;
     _cache.dispose();
+    removeListener(_changeCallback);
+    removeListener(scheduleAnalysis);
     super.dispose();
   }
 
@@ -1573,9 +1632,32 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   }
 
   @override
+  void changeAnalysisResult(AnalysisResult result) async {
+    analysisResult = result;
+    notifyListeners();
+  }
+
+  @override
   TextSpan? buildTextSpan(int index, TextStyle baseStyle) {
     return spanBuilder?.call(index, codeLines[index], baseStyle);
   }
+
+  @override
+  void scheduleAnalysis() {
+    _debounce?.cancel();
+
+    if (_lastAnalyzedText == text) {
+      // If the last analyzed code is the same as current code
+      // we don't need to analyze it again.
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 5000), () async {
+      _timerStream.sink.add(true);
+    });
+  }
+
+  @override
+  StreamController get timerStream => _timerStream;
 
 }
 
@@ -1590,6 +1672,8 @@ class _CodeLineEditingCache {
     _node = _CodeLineEditingCacheNode(controller.value);
     _markNewRecord = false;
   }
+
+  bool get isCodeChanged => _node.value!=controller.value;
 
   bool get canUndo => _node.pre != null;
 
@@ -1704,6 +1788,25 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
     }
     _delegate = value;
   }
+
+  @override
+  AnalysisResult get analysisResult => _delegate.analysisResult;
+
+  @override
+  set analysisResult(AnalysisResult analysisResult) => _delegate.analysisResult = analysisResult;
+
+  @override
+  CodeFindController? get findController => _delegate.findController;
+
+  @override
+  set findController(CodeFindController? controller) => _delegate.findController = controller;
+
+  @override
+  CodeScrollController? get scrollController => _delegate.scrollController;
+
+  @override
+  set scrollController(CodeScrollController? controller) =>
+      _delegate.scrollController = controller;
 
   @override
   CodeLines get codeLines => _delegate.codeLines;
@@ -2054,5 +2157,30 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
   void undo() {
     _delegate.undo();
   }
+
+  @override
+  ui.VoidCallback? codeChangedCallback;
+
+  @override
+  FocusNode? focusNode;
+
+  @override
+  void changeAnalysisResult(AnalysisResult result) {
+    _delegate.changeAnalysisResult(result);
+  }
+
+  @override
+  bool get isCodeChanged => _delegate.isCodeChanged;
+
+  @override
+  _CodeFieldRender get render => _delegate.render;
+
+  @override
+  void scheduleAnalysis() {
+    _delegate.scheduleAnalysis();
+  }
+
+  @override
+  StreamController get timerStream => _delegate.timerStream;
 
 }

@@ -181,7 +181,13 @@ class CodeFindResult {
 abstract class CodeFindController extends ValueNotifier<CodeFindValue?> {
 
   factory CodeFindController(CodeLineEditingController controller, [CodeFindValue? value])
-    => _CodeFindControllerImpl(controller, value);
+  {
+    final instance = _CodeFindControllerImpl(controller, value);
+    return instance;
+  }
+
+  final SearchSettingsController settingsController =
+  SearchSettingsController();
 
   TextEditingController get findInputController;
 
