@@ -13,3 +13,8 @@
 ## 1.0.0
 
 * Improve performance of re-editor
+
+## 1.0.1
+
+* Bug fix
+* Fix AutoComplete bugs and features
