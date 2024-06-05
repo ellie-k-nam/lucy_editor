@@ -18,3 +18,8 @@
 
 * Bug fix
 * Fix AutoComplete bugs and features
+
+## 1.0.2
+
+* Bug fix
+* Performance improvement
