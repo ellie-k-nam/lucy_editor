@@ -41,6 +41,8 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     _analysisResult = analysisResult;
 
     _changeCallback = () {
+      print('--------------------- code changed ----------------------');
+      final chaged = isCodeChanged;
       _codeChangedCallback?.call();
     };
     addListener(_changeCallback);
@@ -1673,7 +1675,16 @@ class _CodeLineEditingCache {
     _markNewRecord = false;
   }
 
-  bool get isCodeChanged => _node.value!=controller.value;
+  bool get isCodeChanged {
+    var node = _node;
+    while( null!=node.pre ) {
+      if( node.pre!.value.isInitial ) {
+        break;
+      }
+      node = node.pre!;
+    }
+    return node.value != controller.value;
+  }
 
   bool get canUndo => _node.pre != null;
 

@@ -224,13 +224,23 @@ class _CodeHighlightEngine {
       callback(const []);
       return;
     }
-    _tasker.run(_HighlightPayload(
+
+    final result = _run(_HighlightPayload(
       highlight: highlight,
       codes: codes,
       languages: modes.keys.toList(),
       maxSizes: modes.values.map((e) => e.maxSize).toList(),
       maxLineLengths: modes.values.map((e) => e.maxLineLength).toList(),
-    ), callback);
+    ));
+    callback(result);
+
+    // _tasker.run(_HighlightPayload(
+    //   highlight: highlight,
+    //   codes: codes,
+    //   languages: modes.keys.toList(),
+    //   maxSizes: modes.values.map((e) => e.maxSize).toList(),
+    //   maxLineLengths: modes.values.map((e) => e.maxLineLength).toList(),
+    // ), callback);
   }
 
   static List<_HighlightResult> _run(_HighlightPayload payload) {
@@ -248,6 +258,7 @@ class _CodeHighlightEngine {
       }
       total += length;
     }
+    //canHighlight = false;
     final String code = payload.codes.asString(TextLineBreak.lf, false);
     final HighlightResult result;
     if (!canHighlight) {
@@ -261,6 +272,7 @@ class _CodeHighlightEngine {
     }
     final _HighlightLineRenderer renderer = _HighlightLineRenderer();
     result.render(renderer);
+
     return renderer.lineResults;
   }
 
