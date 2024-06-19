@@ -70,6 +70,9 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
     CodeLineOptions options = const CodeLineOptions()
   ]) => _CodeLineEditingControllerImpl.fromTextAsync(text, options);
 
+  bool get isSaved;
+  StreamController get saveController;
+
   AnalysisResult get analysisResult;
   set analysisResult(AnalysisResult analysisResult);
 
@@ -195,6 +198,9 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   /// this value should only be set between frames, e.g. in response to user
   /// actions, not during the build, layout, or paint phases.
   set textAsync(String value);
+
+  /// initialize cache
+  void initializeCache();
 
   /// Only used in internal.
   void bindEditor(GlobalKey key);
@@ -541,6 +547,14 @@ class CodeLineEditingValue {
   }
 
   bool get isInitial => codeLines == _kInitialCodeLines;
+
+  bool equals(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is CodeLineEditingValue
+        && other.codeLines.equals(codeLines);
+  }
 
   @override
   bool operator ==(Object other) {

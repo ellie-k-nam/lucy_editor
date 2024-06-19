@@ -23,3 +23,8 @@
 
 * Bug fix
 * Performance improvement
+
+## 1.0.3
+
+* Bug fix
+* Enhance Source Editing Indication and Save Functionality

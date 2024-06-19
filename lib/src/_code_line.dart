@@ -14,6 +14,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     implements CodeLineEditingController {
 
   final StreamController _timerStream = StreamController<bool>.broadcast();
+  final StreamController _saveController = StreamController<bool>.broadcast();
   CodeFindController? _findController;
   CodeScrollController? _scrollControler;
   @override
@@ -29,6 +30,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   String _lastAnalyzedText = '';
   Timer? _debounce;
   late VoidCallback _changeCallback;
+  bool _isSaved = true;
 
   _CodeLineEditingControllerImpl({
     required CodeLines codeLines,
@@ -41,9 +43,10 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     _analysisResult = analysisResult;
 
     _changeCallback = () {
-      print('--------------------- code changed ----------------------');
-      final chaged = isCodeChanged;
+      //if( _cache.isCodeChanged )
       _codeChangedCallback?.call();
+      if( _isSaved && isCodeChanged )
+        _isSaved = false;
     };
     addListener(_changeCallback);
     addListener(scheduleAnalysis);
@@ -84,6 +87,12 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     CodeLineUtils.toCodeLinesAsync(text ?? '').then((value) => controller.codeLines = value);
     return controller;
   }
+
+  @override
+  bool get isSaved => _isSaved;
+
+  @override
+  StreamController get saveController => _saveController;
 
   @override
   AnalysisResult get analysisResult => _analysisResult;
@@ -261,6 +270,13 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
       // Should not happen
     });
   }
+
+  @override
+  void initializeCache() {
+    _isSaved = true;
+    _cache.initialize();
+  }
+
 
   @override
   void bindEditor(GlobalKey key) {
@@ -928,6 +944,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     _debounce?.cancel();
     _editorKey = null;
     _cache.dispose();
+    _saveController.close();
     removeListener(_changeCallback);
     removeListener(scheduleAnalysis);
     super.dispose();
@@ -1667,7 +1684,10 @@ class _CodeLineEditingCache {
 
   final CodeLineEditingController controller;
   late _CodeLineEditingCacheNode _node;
+  late _CodeLineEditingCacheNode _redoNode;
   late bool _markNewRecord;
+  final _trackCount = ValueNotifier<int>(0);
+  int _nodeCount = 0;
 
   _CodeLineEditingCache(this.controller) {
     controller.addListener(_onValueChanged);
@@ -1675,24 +1695,26 @@ class _CodeLineEditingCache {
     _markNewRecord = false;
   }
 
-  bool get isCodeChanged {
-    var node = _node;
-    while( null!=node.pre ) {
-      if( node.pre!.value.isInitial ) {
-        break;
-      }
-      node = node.pre!;
-    }
-    return node.value != controller.value;
-  }
-
+  ValueNotifier<int> get trackCount => _trackCount;
+  bool get isCodeChanged => _trackCount.value != 0;
   bool get canUndo => _node.pre != null;
-
   bool get canRedo => _node.next != null;
 
+  void initialize() {
+    _trackCount.value = 0;
+  }
+
+  void track() => _trackCount.value++;
+
   void undo() {
-    if (_node.pre != null) {
+    if (_node.pre != null && !_node.pre!.value.isInitial ) {
       _node = _node.pre!;
+
+      if( 0 < _trackCount.value ) {
+        _trackCount.value--;
+      } else if( 0 == _trackCount.value ) {
+        _trackCount.value = --_nodeCount;
+      }
       controller.value = _node.value;
     }
   }
@@ -1700,6 +1722,8 @@ class _CodeLineEditingCache {
   void redo() {
     if (_node.next != null) {
       _node = _node.next!;
+
+      _trackCount.value++;
       controller.value = _node.value;
     }
   }
@@ -1713,14 +1737,16 @@ class _CodeLineEditingCache {
   }
 
   void _onValueChanged() {
-    if (_node.value == controller.value) {
+    final equal =  _node.value.equals(controller.value);
+    //if (equal && _node.pre!.value.isInitial) {
+    if( equal ) {
       return;
     }
     if (_node.isInitial) {
       _appendNewNode();
       return;
     }
-    if (!_node.isTail) {
+    if (_node.isTail) {
       _appendNewNode();
       return;
     }
@@ -1734,12 +1760,15 @@ class _CodeLineEditingCache {
 
   void _appendNewNode() {
     final _CodeLineEditingCacheNode newNode = _CodeLineEditingCacheNode(controller.value);
-    if (_node.next != null) {
+    if( _node.next != null ) {
       _node.next!.pre = null;
     }
+    if( !_node.isInitial )
+      track();
     _node.next = newNode;
     newNode.pre = _node;
     _node = newNode;
+    _nodeCount++;
   }
 
 }
@@ -1799,6 +1828,11 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
     }
     _delegate = value;
   }
+  @override
+  bool get isSaved => _delegate.isSaved;
+
+  @override
+  StreamController get saveController => _delegate.saveController;
 
   @override
   AnalysisResult get analysisResult => _delegate.analysisResult;
@@ -1882,6 +1916,9 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
 
   @override
   CodeLine get baseLine => _delegate.baseLine;
+
+  @override
+  void initializeCache() => _delegate.initializeCache();
 
   @override
   void bindEditor(GlobalKey<State<StatefulWidget>> key) {

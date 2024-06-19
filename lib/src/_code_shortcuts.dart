@@ -271,6 +271,9 @@ class _CodeShortcutActions extends StatelessWidget {
         }
         break;
       }
+      case CodeShortcutSaveIntent: {
+        editingController.saveController.add(true);
+      }
     }
     return intent;
   }
