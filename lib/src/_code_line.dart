@@ -31,6 +31,9 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   Timer? _debounce;
   late VoidCallback _changeCallback;
   bool _isSaved = true;
+  final _intelliSense = StreamController<IntelliData>.broadcast();
+  final _intelliData = StreamController<IntelliData>.broadcast();
+  StreamSubscription? _subscription;
 
   _CodeLineEditingControllerImpl({
     required CodeLines codeLines,
@@ -50,6 +53,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     };
     addListener(_changeCallback);
     addListener(scheduleAnalysis);
+    _subscription = _intelliData.stream.listen(_showIntelliSense);
   }
 
   factory _CodeLineEditingControllerImpl.fromText(String? text, [
@@ -713,6 +717,11 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   }
 
   @override
+  void deleteAllBefore() {
+    runRevocableOp(_deleteAllBefore);
+  }
+
+  @override
   void deleteBackward() {
     runRevocableOp(_deleteBackward);
   }
@@ -947,6 +956,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     _saveController.close();
     removeListener(_changeCallback);
     removeListener(scheduleAnalysis);
+    _subscription?.cancel();
     super.dispose();
   }
 
@@ -1040,6 +1050,12 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
         affinity: selection.start.affinity
       )
     );
+    makeCursorCenterIfInvisible();
+  }
+
+  void _deleteAllBefore() {
+    selection = selection.copyWith(baseOffset: 0);
+    _deleteSelection();
     makeCursorCenterIfInvisible();
   }
 
@@ -1675,9 +1691,52 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     });
   }
 
+
+  @override
+  StreamController<IntelliData> get intelliSense => _intelliSense;
+
+  @override
+  StreamController<IntelliData> get intelliData => _intelliData;
+
+  void _showIntelliSense(IntelliData data) {
+
+    final autocompleteState =
+    data.context.findAncestorStateOfType<_CodeAutocompleteState>();
+    if (autocompleteState == null) {
+      return;
+    }
+    if (isComposing || !selection.isCollapsed) {
+      autocompleteState.dismiss();
+      return;
+    }
+    final _CodeFieldRender? render = _editorKey?.currentContext?.findRenderObject() as _CodeFieldRender?;
+    if (render == null) {
+      autocompleteState.dismiss();
+      return;
+    }
+    final Offset? position = render.calculateTextPositionScreenOffset(selection.extent, true);
+    if (position == null) {
+      autocompleteState.dismiss();
+      return;
+    }
+    autocompleteState.showIntelliSense(
+        layerLink: data.startHandleLayerLink,
+        position: position,
+        lineHeight: render.lineHeight,
+        value: value,
+        onAutocomplete: (value) {
+          replaceSelection(value);
+        }
+    );
+  }
+
+  @override
+  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink) {
+    _intelliSense.add(IntelliData(value, context, startHandleLayerLink));
+  }
+
   @override
   StreamController get timerStream => _timerStream;
-
 }
 
 class _CodeLineEditingCache {
@@ -1960,6 +2019,11 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
   }
 
   @override
+  void deleteAllBefore() {
+    _delegate.deleteAllBefore();
+  }
+
+  @override
   void deleteBackward() {
     _delegate.deleteBackward();
   }
@@ -2227,6 +2291,16 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
   void scheduleAnalysis() {
     _delegate.scheduleAnalysis();
   }
+
+  @override
+  StreamController<IntelliData> get intelliSense => _delegate.intelliSense;
+
+  @override
+  StreamController<IntelliData> get intelliData => _delegate.intelliData;
+
+  @override
+  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink)
+    => _delegate.showIntelliSense(context, startHandleLayerLink);
 
   @override
   StreamController get timerStream => _delegate.timerStream;

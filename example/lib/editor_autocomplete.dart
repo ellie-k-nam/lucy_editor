@@ -171,6 +171,7 @@ class _AutoCompleteEditorState extends State<AutoCompleteEditor> {
           width: 1,
           color: Colors.blue
         ),
+        commentFormatter: DefaultCodeCommentFormatter(singleLinePrefix: '//', multiLinePrefix: '//'),
       )
     );
   }

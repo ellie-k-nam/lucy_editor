@@ -69,6 +69,7 @@ class _CodeShortcutActions extends StatelessWidget {
   final CodeCommentFormatter? commentFormatter;
   final Map<Type, Action<Intent>>? overrideActions;
   final bool readOnly;
+  final LayerLink startHandleLayerLink;
   final Widget child;
 
   const _CodeShortcutActions({
@@ -77,6 +78,7 @@ class _CodeShortcutActions extends StatelessWidget {
     this.commentFormatter,
     required this.overrideActions,
     required this.readOnly,
+    required this.startHandleLayerLink,
     required this.child,
   });
 
@@ -273,6 +275,15 @@ class _CodeShortcutActions extends StatelessWidget {
       }
       case CodeShortcutSaveIntent: {
         editingController.saveController.add(true);
+      }
+      case CodeShortcutDeleteBeforeIntent: {
+        if ((intent as CodeShortcutDeleteBeforeIntent).before) {
+          editingController.deleteAllBefore();
+        }
+        break;
+      }
+      case CodeShortcutIntelliSenseIntent: {
+        editingController.showIntelliSense(context, startHandleLayerLink);
       }
     }
     return intent;

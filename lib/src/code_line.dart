@@ -281,6 +281,8 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   /// Note that this operation will have no effect if the selection is collapsed.
   void deleteSelection();
 
+  void deleteAllBefore();
+
   /// If the selection is currently collapsed, the character behind the cursor will be deleted.
   /// Otherwise, will delete the selection, same as [deleteSelection].
   ///
@@ -376,6 +378,12 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   TextSpan? buildTextSpan(int index, TextStyle baseStyle);
 
   void scheduleAnalysis();
+
+  StreamController<IntelliData> get intelliSense;
+
+  StreamController<IntelliData> get intelliData;
+
+  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink);
 }
 
 class CodeLine {
@@ -1165,4 +1173,16 @@ class CodeLineUtils {
     return compute<String, CodeLines>((message) => toCodeLines(message), text);
   }
 
+}
+
+class IntelliData {
+  final CodeLineEditingValue value;
+  final BuildContext context;
+  final LayerLink startHandleLayerLink;
+  final List<CodePrompt>? prompts;
+  IntelliData(
+      this.value,
+      this.context,
+      this.startHandleLayerLink,
+      {this.prompts});
 }

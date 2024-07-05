@@ -172,13 +172,13 @@ class CodeAutocomplete extends StatefulWidget {
 
 class _CodeAutocompleteState extends State<CodeAutocomplete> {
 
+  static const string = const ['\'', '"'];
   late final _CodeAutocompleteNavigateAction _navigateAction;
   late final _CodeAutocompleteAction _selectAction;
 
   ValueChanged? _onAutocomplete;
   OverlayEntry? _overlayEntry;
   ValueNotifier<CodeAutocompleteEditingValue>? _notifier;
-
   final Set<CodePrompt> _allKeyPromptWords = {};
 
   @override
@@ -263,6 +263,17 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     _selectAction.setEnabled(true);
   }
 
+
+  void showIntelliSense({
+    required LayerLink layerLink,
+    required Offset position,
+    required double lineHeight,
+    required CodeLineEditingValue value,
+    required ValueChanged onAutocomplete,
+  }) {
+
+  }
+
   void dismiss() {
     _notifier = null;
     _onAutocomplete = null;
@@ -303,6 +314,42 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
         );
       }
     }
+  }
+
+  String? getTarget(CodeLineEditingValue value) {
+    final text = value.codeLines[value.selection.extentIndex].text;
+    final charsBefore = text.substring(0, value.selection.extentOffset).characters;
+    if( charsBefore.isEmpty ) {
+      return null;
+    }
+    final charsAfter = text.substring(value.selection.extentOffset).characters;
+    if( charsBefore.containsSymbols(string) && charsAfter.containsSymbols(string) ) {
+      return null;
+    }
+    final cut = charsBefore.takeLast(1).string=='.' ? 2 : 1;
+    var start = charsBefore.length - cut;
+    int checkDot(int start) {
+      while( start-- >= 0 ) {
+        if( !charsBefore.elementAt(start).isValidVariablePart ) {
+          break;
+        }
+      }
+      return start;
+    }
+    start = checkDot(start);
+    var target = charsBefore.getRange(start + 1, charsBefore.length - (cut-1)).string;
+    if( null==target ) {
+      return null;
+    }
+    final Iterable<CodePrompt> prompts;
+
+    //ch
+    if( start>0 && charsBefore.elementAt(start)=='.' ) {
+      final mark = start;
+      start = checkDot(--start);
+      target = charsBefore.getRange(start+1, mark).string;
+    }
+
   }
 
   CodeAutocompleteEditingValue? _buildAutocompleteOptions(CodeLineEditingValue value) {
@@ -443,7 +490,8 @@ extension _CodeAutocompleteStringExtension on String {
 
   bool get isValidVariablePart {
     final int char = codeUnits.first;
-    return (char >= 65 && char <= 90) || (char >= 97 && char <= 122) || char == 95;
+    return (char >= 65 && char <= 90) || (char >= 97 && char <= 122) ||
+        (char == 95 || char == 36);
   }
 
 }

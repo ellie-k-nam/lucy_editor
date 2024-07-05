@@ -354,7 +354,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
         result: null,
         searching: false
       );
-      return;
+      return findInputFocusNode.requestFocus();
     }
     final bool optionChanged = value?.result?.option != option;
     if (!optionChanged && controller.codeLines.equals(value?.result?.codeLines)) {

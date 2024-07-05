@@ -45,6 +45,9 @@ enum CodeShortcutType {
   replace,
   save,
   esc,
+  deleteBefore,
+  intelliSense,
+
 }
 
 abstract class CodeShortcutsActivatorsBuilder {
@@ -198,6 +201,15 @@ class CodeShortcutEscIntent extends Intent {
   const CodeShortcutEscIntent();
 }
 
+class CodeShortcutDeleteBeforeIntent extends CodeShortcutEditableIntent {
+  final bool before;
+  const CodeShortcutDeleteBeforeIntent(this.before);
+}
+
+class CodeShortcutIntelliSenseIntent extends Intent {
+  const CodeShortcutIntelliSenseIntent();
+}
+
 const Map<CodeShortcutType, Intent> kCodeShortcutIntents = {
   CodeShortcutType.selectAll: CodeShortcutSelectAllIntent(),
   CodeShortcutType.cut: CodeShortcutCutIntent(),
@@ -243,6 +255,8 @@ const Map<CodeShortcutType, Intent> kCodeShortcutIntents = {
   CodeShortcutType.replace: CodeShortcutReplaceIntent(),
   CodeShortcutType.save: CodeShortcutSaveIntent(),
   CodeShortcutType.esc: CodeShortcutEscIntent(),
+  CodeShortcutType.deleteBefore: CodeShortcutDeleteBeforeIntent(true),
+  CodeShortcutType.intelliSense: CodeShortcutIntelliSenseIntent(),
 };
 
 const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsActivators = {
@@ -393,6 +407,12 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsAc
   CodeShortcutType.esc: [
     SingleActivator(LogicalKeyboardKey.escape)
   ],
+  CodeShortcutType.deleteBefore: [
+    SingleActivator(LogicalKeyboardKey.backspace, control: true),
+  ],
+  CodeShortcutType.intelliSense: [
+    SingleActivator(LogicalKeyboardKey.period, meta: true)
+  ],
 };
 
 const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultCommonCodeShortcutsActivators = {
@@ -419,7 +439,7 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultCommonCodeShortcut
   CodeShortcutType.backspace: [
     SingleActivator(LogicalKeyboardKey.backspace,),
     SingleActivator(LogicalKeyboardKey.backspace, shift: true),
-    SingleActivator(LogicalKeyboardKey.backspace, control: true),
+    //SingleActivator(LogicalKeyboardKey.backspace, control: true),
     SingleActivator(LogicalKeyboardKey.backspace, control: true, shift: true),
     SingleActivator(LogicalKeyboardKey.backspace, alt: true),
     SingleActivator(LogicalKeyboardKey.backspace, alt: true, shift: true),
@@ -538,5 +558,11 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultCommonCodeShortcut
   ],
   CodeShortcutType.esc: [
     SingleActivator(LogicalKeyboardKey.escape)
+  ],
+  CodeShortcutType.deleteBefore: [
+    SingleActivator(LogicalKeyboardKey.backspace, control: true),
+  ],
+  CodeShortcutType.intelliSense: [
+    SingleActivator(LogicalKeyboardKey.period, control: true)
   ],
 };

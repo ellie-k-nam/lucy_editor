@@ -366,12 +366,12 @@ class _CodeEditorState extends State<CodeEditor> {
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
-    if (widget.controller == null) {
+    //if (widget.controller == null) {
       _editingController.dispose();
-    }
-    if (widget.findController == null) {
+    //}
+    //if (widget.findController == null) {
       _findController.dispose();
-    }
+    //}
     if (widget.scrollController== null) {
       _scrollController.dispose();
     }
@@ -506,6 +506,7 @@ class _CodeEditorState extends State<CodeEditor> {
           commentFormatter: widget.commentFormatter,
           overrideActions: widget.shortcutOverrideActions,
           readOnly: readOnly,
+          startHandleLayerLink: _startHandleLayerLink,
           child: Focus(
             autofocus: autofocus,
             focusNode: _focusNode,

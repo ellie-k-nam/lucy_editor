@@ -28,3 +28,7 @@
 
 * Bug fix
 * Enhance Source Editing Indication and Save Functionality
+
+## 1.0.4
+
+* Urgent bug fix

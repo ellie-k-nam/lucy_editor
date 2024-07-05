@@ -179,14 +179,14 @@ class _CodeHighlighter extends ValueNotifier<List<_HighlightResult>> {
 
 class _CodeHighlightEngine {
 
-  late final _IsolateTasker<_HighlightPayload, List<_HighlightResult>> _tasker;
+  //late final _IsolateTasker<_HighlightPayload, List<_HighlightResult>> _tasker;
 
   Highlight? _highlight;
   CodeHighlightTheme? _theme;
 
   _CodeHighlightEngine(final CodeHighlightTheme? theme) {
     this.theme = theme;
-    _tasker = _IsolateTasker<_HighlightPayload, List<_HighlightResult>>('CodeHighlightEngine', _run);
+    //_tasker = _IsolateTasker<_HighlightPayload, List<_HighlightResult>>('CodeHighlightEngine', _run);
   }
 
   set theme(CodeHighlightTheme? value) {
@@ -209,7 +209,7 @@ class _CodeHighlightEngine {
   }
 
   void dispose() {
-    _tasker.close();
+    //_tasker.close();
   }
 
   void run(CodeLines codes, IsolateCallback<List<_HighlightResult>> callback) {
