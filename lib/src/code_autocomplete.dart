@@ -342,8 +342,7 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
       return null;
     }
     final Iterable<CodePrompt> prompts;
-
-    //ch
+    // *
     if( start>0 && charsBefore.elementAt(start)=='.' ) {
       final mark = start;
       start = checkDot(--start);

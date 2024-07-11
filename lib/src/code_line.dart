@@ -70,6 +70,8 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
     CodeLineOptions options = const CodeLineOptions()
   ]) => _CodeLineEditingControllerImpl.fromTextAsync(text, options);
 
+  bool get disposed;
+
   bool get isSaved;
   StreamController get saveController;
 

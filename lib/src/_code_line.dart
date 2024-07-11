@@ -34,6 +34,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   final _intelliSense = StreamController<IntelliData>.broadcast();
   final _intelliData = StreamController<IntelliData>.broadcast();
   StreamSubscription? _subscription;
+  bool _disposed = false;
 
   _CodeLineEditingControllerImpl({
     required CodeLines codeLines,
@@ -91,6 +92,8 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     CodeLineUtils.toCodeLinesAsync(text ?? '').then((value) => controller.codeLines = value);
     return controller;
   }
+  @override
+  bool get disposed => _disposed;
 
   @override
   bool get isSaved => _isSaved;
@@ -957,6 +960,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     removeListener(_changeCallback);
     removeListener(scheduleAnalysis);
     _subscription?.cancel();
+    _disposed = true;
     super.dispose();
   }
 
@@ -1887,6 +1891,9 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
     }
     _delegate = value;
   }
+  @override
+  bool get disposed => _delegate.disposed;
+
   @override
   bool get isSaved => _delegate.isSaved;
 
