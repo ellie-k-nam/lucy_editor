@@ -32,3 +32,7 @@
 ## 1.0.4
 
 * Urgent bug fix
+
+## 1.0.5
+
+* Urgent bug fix
