@@ -195,6 +195,8 @@ abstract class CodeFindController extends ValueNotifier<CodeFindValue?> {
 
   FocusNode get findInputFocusNode;
 
+  void processFocusListener();
+
   FocusNode get replaceInputFocusNode;
 
   List<CodeLineSelection>? get allMatchSelections;

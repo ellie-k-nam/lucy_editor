@@ -28,6 +28,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
   void dispose() {
     super.dispose();
     controller.removeListener(_updateResult);
+    _findInputFocusNode.removeListener(_requestFocus);;
     _findInputController.removeListener(_onFindPatternChanged);
     _findInputController.dispose();
     _findInputFocusNode.dispose();
@@ -44,6 +45,14 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
 
   @override
   FocusNode get findInputFocusNode => _findInputFocusNode;
+
+  void _requestFocus() => _findInputFocusNode.requestFocus();
+
+  @override
+  void processFocusListener() {
+    _findInputFocusNode.removeListener(_requestFocus);;
+    _findInputFocusNode.addListener(_requestFocus);
+  }
 
   @override
   FocusNode get replaceInputFocusNode => _replaceInputFocusNode;

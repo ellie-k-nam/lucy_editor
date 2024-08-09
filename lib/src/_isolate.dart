@@ -4,7 +4,6 @@ typedef IsolateRunnable<Req, Res> = Res Function(Req req);
 typedef IsolateCallback<Res> = void Function(Res res);
 
 class _IsolateTasker<Req, Res> {
-
   final String name;
   final ReceivePort _receivePort;
   late bool _closed;
@@ -15,10 +14,10 @@ class _IsolateTasker<Req, Res> {
   SendPort? _sendPort;
   late List<_IsolateTask<Req, Res>> _taskQueue;
 
-  _IsolateTasker(this.name, IsolateRunnable<Req, Res> runnable) :
-    _receivePort = ReceivePort(name),
-    _receivedMessageIndex = -1,
-    _sentMessageIndex = 0 {
+  _IsolateTasker(this.name, IsolateRunnable<Req, Res> runnable)
+      : _receivePort = ReceivePort(name),
+        _receivedMessageIndex = -1,
+        _sentMessageIndex = 0 {
     _closed = false;
     _receivePort.listen((message) {
       _receivedMessageIndex++;
@@ -26,7 +25,8 @@ class _IsolateTasker<Req, Res> {
         _sendPort = message;
         _runTaskQueue();
       } else {
-        final int taskIndex = _taskQueue.indexWhere((element) => element.id == message.id);
+        final int taskIndex =
+            _taskQueue.indexWhere((element) => element.id == message.id);
         if (taskIndex < 0) {
           return;
         }
@@ -35,7 +35,8 @@ class _IsolateTasker<Req, Res> {
       }
     });
     _taskQueue = [];
-    final _IsolateInitMessage<Req, Res> message = _IsolateInitMessage<Req, Res>(_receivePort.sendPort, runnable);
+    final _IsolateInitMessage<Req, Res> message =
+        _IsolateInitMessage<Req, Res>(_receivePort.sendPort, runnable);
     Isolate.spawn<_IsolateInitMessage<Req, Res>>(_run, message).then((value) {
       _isolate = value;
     });
@@ -47,9 +48,7 @@ class _IsolateTasker<Req, Res> {
     }
     _sentMessageIndex++;
     final _IsolateTask<Req, Res> task = _IsolateTask(
-      _IsolateTaskRequestMessage<Req, Res>(_sentMessageIndex, req),
-      callback
-    );
+        _IsolateTaskRequestMessage<Req, Res>(_sentMessageIndex, req), callback);
     _taskQueue.add(task);
     if (_sendPort == null) {
       return;
@@ -58,6 +57,9 @@ class _IsolateTasker<Req, Res> {
   }
 
   void close() {
+    if (_closed) {
+      return;
+    }
     _closed = true;
     _receivePort.close();
     _isolate?.kill(priority: Isolate.immediate);
@@ -75,10 +77,11 @@ class _IsolateTasker<Req, Res> {
     final ReceivePort receivePort = ReceivePort();
     message.port.send(receivePort.sendPort);
     receivePort.listen((task) {
-      message.port.send(_IsolateTaskResponseMessage(task.id, message.runnable(task.request)));
+      message.port.send(
+          _IsolateTaskResponseMessage(task.id, message.runnable(task.request)));
     });
+    print('----------------CLOSE ISOLATES');
   }
-
 }
 
 class _IsolateTask<Req, Res> {
@@ -105,10 +108,8 @@ class _IsolateTaskResponseMessage<Res> {
 }
 
 class _IsolateInitMessage<Req, Res> {
-
   final SendPort port;
   final IsolateRunnable<Req, Res> runnable;
 
   const _IsolateInitMessage(this.port, this.runnable);
-
 }

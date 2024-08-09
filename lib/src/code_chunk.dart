@@ -11,6 +11,7 @@ class CodeChunkController extends ValueNotifier<List<CodeChunk>> {
 
   CodeChunkController(this.controller, this.analyzer) : super(const []) {
     controller.addListener(_onCodeChanged);
+    print('----------> CodeChunkController <-----------');
     _tasker = _IsolateTasker<_CodeChunkAnalyzePayload, _CodeChunkAnalyzeResult>('CodeChunk', (payload) {
       final List<CodeChunk> chunks = payload.analyzer.run(payload.codeLines);
       final List<int> invalidCollapsedChunkIndexes = [];

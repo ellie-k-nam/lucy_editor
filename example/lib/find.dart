@@ -60,7 +60,7 @@ class CodeFindPanelView extends StatelessWidget implements PreferredSizeWidget {
         borderRadius: BorderRadius.all(Radius.circular(0)),
         gapPadding: 0
       ),
-    )
+    ),
   });
 
   @override
@@ -103,6 +103,10 @@ class CodeFindPanelView extends StatelessWidget implements PreferredSizeWidget {
     } else {
       result = '${value.result!.index + 1}/${value.result!.matches.length}';
     }
+    controller.processFocusListener();
+    // controller.findInputFocusNode.addListener(() {
+    //   controller.findInputFocusNode.requestFocus();
+    // });
     return Row(
       children: [
         SizedBox(
