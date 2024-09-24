@@ -29,6 +29,8 @@ enum CodeShortcutType {
   selectionExtendDown,
   selectionExtendForward,
   selectionExtendBackward,
+  selectionExtendWordForward,
+  selectionExtendWordBackward,
   selectionExtendLineStart,
   selectionExtendLineEnd,
   selectionExtendPageStart,
@@ -36,6 +38,7 @@ enum CodeShortcutType {
   indent,
   outdent,
   newLine,
+  intelli,
   transposeCharacters,
   singleLineComment,
   multiLineComment,
@@ -119,6 +122,10 @@ class CodeShortcutOutdentIntent extends CodeShortcutEditableIntent {
   const CodeShortcutOutdentIntent();
 }
 
+class CodeShortcutIntelliIntent extends CodeShortcutEditableIntent {
+  const CodeShortcutIntelliIntent();
+}
+
 class CodeShortcutCommentIntent extends CodeShortcutEditableIntent {
   final bool single;
   const CodeShortcutCommentIntent(this.single);
@@ -152,6 +159,11 @@ class CodeShortcutCursorMoveWordBoundaryIntent extends Intent {
 class CodeShortcutSelectionExtendIntent extends Intent {
   final AxisDirection direction;
   const CodeShortcutSelectionExtendIntent(this.direction);
+}
+
+class CodeShortcutSelectionExtendWordEdgeIntent extends Intent {
+  final bool forward;
+  const CodeShortcutSelectionExtendWordEdgeIntent(this.forward);
 }
 
 class CodeShortcutSelectionExtendLineEdgeIntent extends Intent {
@@ -239,12 +251,15 @@ const Map<CodeShortcutType, Intent> kCodeShortcutIntents = {
   CodeShortcutType.selectionExtendDown: CodeShortcutSelectionExtendIntent(AxisDirection.down),
   CodeShortcutType.selectionExtendForward: CodeShortcutSelectionExtendIntent(AxisDirection.right),
   CodeShortcutType.selectionExtendBackward: CodeShortcutSelectionExtendIntent(AxisDirection.left),
+  CodeShortcutType.selectionExtendWordForward: CodeShortcutSelectionExtendWordEdgeIntent(true),
+  CodeShortcutType.selectionExtendWordBackward: CodeShortcutSelectionExtendWordEdgeIntent(false),
   CodeShortcutType.selectionExtendLineStart: CodeShortcutSelectionExtendLineEdgeIntent(false),
   CodeShortcutType.selectionExtendLineEnd: CodeShortcutSelectionExtendLineEdgeIntent(true),
   CodeShortcutType.selectionExtendPageStart: CodeShortcutSelectionExtendPageEdgeIntent(false),
   CodeShortcutType.selectionExtendPageEnd: CodeShortcutSelectionExtendPageEdgeIntent(true),
   CodeShortcutType.indent: CodeShortcutIndentIntent(),
   CodeShortcutType.outdent: CodeShortcutOutdentIntent(),
+  CodeShortcutType.intelli: CodeShortcutIntelliIntent(),
   CodeShortcutType.newLine: CodeShortcutNewLineIntent(),
   CodeShortcutType.transposeCharacters: CodeShortcutTransposeCharactersIntent(),
   CodeShortcutType.singleLineComment: CodeShortcutCommentIntent(true),
@@ -335,10 +350,16 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsAc
     SingleActivator(LogicalKeyboardKey.end, control: true)
   ],
   CodeShortcutType.cursorMoveWordBoundaryForward: [
-    SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true)
+    SingleActivator(LogicalKeyboardKey.arrowRight, alt: true)
   ],
   CodeShortcutType.cursorMoveWordBoundaryBackward: [
-    SingleActivator(LogicalKeyboardKey.arrowRight, alt: true)
+    SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true)
+  ],
+  CodeShortcutType.cursorMovePageDown:[
+    SingleActivator(LogicalKeyboardKey.pageDown)
+  ],
+  CodeShortcutType.cursorMovePageUp:[
+    SingleActivator(LogicalKeyboardKey.pageUp)
   ],
   CodeShortcutType.selectionExtendUp: [
     SingleActivator(LogicalKeyboardKey.arrowUp, shift: true)
@@ -360,6 +381,12 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsAc
     SingleActivator(LogicalKeyboardKey.arrowDown, shift: true, meta: true),
     SingleActivator(LogicalKeyboardKey.end, shift: true, meta: true)
   ],
+  CodeShortcutType.selectionExtendWordBackward: [
+    SingleActivator(LogicalKeyboardKey.arrowLeft, shift: true, alt: true),
+  ],
+  CodeShortcutType.selectionExtendWordForward: [
+    SingleActivator(LogicalKeyboardKey.arrowRight, shift: true, alt: true),
+  ],
   CodeShortcutType.selectionExtendLineStart: [
     SingleActivator(LogicalKeyboardKey.arrowLeft, shift: true, meta: true),
     SingleActivator(LogicalKeyboardKey.home, shift: true)
@@ -379,6 +406,9 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsAc
     SingleActivator(LogicalKeyboardKey.enter, shift: true),
     SingleActivator(LogicalKeyboardKey.enter, meta: true),
     SingleActivator(LogicalKeyboardKey.enter, meta: true, shift: true)
+  ],
+  CodeShortcutType.intelli: [
+    SingleActivator(LogicalKeyboardKey.tab)
   ],
   CodeShortcutType.transposeCharacters: [
     SingleActivator(LogicalKeyboardKey.keyT, control: true)
@@ -531,6 +561,9 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultCommonCodeShortcut
     SingleActivator(LogicalKeyboardKey.enter, shift: true),
     SingleActivator(LogicalKeyboardKey.enter, control: true),
     SingleActivator(LogicalKeyboardKey.enter, control: true, shift: true)
+  ],
+  CodeShortcutType.intelli: [
+    SingleActivator(LogicalKeyboardKey.tab)
   ],
   CodeShortcutType.transposeCharacters: [
     SingleActivator(LogicalKeyboardKey.keyT, control: true)

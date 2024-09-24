@@ -40,3 +40,8 @@
 ## 1.0.6
 
 * Fix find bugs
+
+## 1.0.7
+
+* Support Javascript AST
+* More complicate AutoComplete for Javascript

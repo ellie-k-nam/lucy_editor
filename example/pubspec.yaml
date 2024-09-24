@@ -60,5 +60,6 @@ flutter:
   assets:
     - assets/code.js
     - assets/code.json
+    - assets/code2.json
     - assets/code.dart
     - assets/large.txt

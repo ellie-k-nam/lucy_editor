@@ -109,6 +109,7 @@ class _ParagraphImpl extends IParagraph {
     final List<TextBox> boxes = paragraph.getBoxesForRange(position,
       position + graphemeClusterLength, boxHeightStyle: ui.BoxHeightStyle.strut);
     if (boxes.isEmpty) {
+      print('box empty!!!!!!!!!!!!');
       return null;
     }
     return Offset(boxes.first.left, boxes.first.top);

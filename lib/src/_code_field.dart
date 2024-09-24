@@ -815,6 +815,8 @@ class _CodeFieldRender extends RenderBox implements MouseTrackerAnnotation {
 
   Offset? calculateTextPositionScreenOffset(CodeLinePosition position, bool rightBottom) {
     final Offset? offset = calculateTextPositionViewportOffset(position);
+    print('offset is $offset <----------------------');
+
     if (offset != null) {
       return localToGlobal(rightBottom ? offset + Offset(0, _preferredLineHeight) : offset);
     }

@@ -224,6 +224,7 @@ class CodeFindPanelView extends StatelessWidget implements PreferredSizeWidget {
       padding: padding,
       child: TextField(
         maxLines: 1,
+        textInputAction: TextInputAction.none,
         focusNode: focusNode,
         style: TextStyle(
           color: inputTextColor,

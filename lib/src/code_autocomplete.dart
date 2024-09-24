@@ -111,6 +111,33 @@ class CodeFunctionPrompt extends CodePrompt {
 
 }
 
+/// The event handler autocomplate prompt.
+class CodeEventPrompt extends CodePrompt {
+
+  CodeEventPrompt({
+    required super.word,
+    this.args = const [],
+  });
+
+  /// The function required arguments.
+  final List<String> args;
+
+  @override
+  String get autocomplete => '$word(${args.join(', ')})';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is CodeEventPrompt && other.word == word &&
+        listEquals(other.args, args);
+  }
+
+  @override
+  int get hashCode => Object.hash(word, args);
+}
+
 class CodeAutocompleteEditingValue {
 
   const CodeAutocompleteEditingValue({
@@ -148,6 +175,7 @@ typedef CodeAutocompleteWidgetBuilder = PreferredSizeWidget Function(BuildContex
 
 class CodeAutocomplete extends StatefulWidget {
 
+  final CodeLineEditingController controller;
   final CodeAutocompleteWidgetBuilder builder;
   final Mode language;
   final List<CodeKeywordPrompt> keywordPrompts;
@@ -157,6 +185,7 @@ class CodeAutocomplete extends StatefulWidget {
 
   const CodeAutocomplete({
     super.key,
+    required this.controller,
     required this.builder,
     required this.language,
     this.keywordPrompts = const [],
@@ -175,6 +204,8 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
   static const string = const ['\'', '"'];
   late final _CodeAutocompleteNavigateAction _navigateAction;
   late final _CodeAutocompleteAction _selectAction;
+  late final _CodeAutocompleteAction _selectAction2;
+
 
   ValueChanged? _onAutocomplete;
   OverlayEntry? _overlayEntry;
@@ -184,6 +215,7 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
   @override
   void initState() {
     super.initState();
+    _initJavascript();
     _navigateAction = _CodeAutocompleteNavigateAction(
       onInvoke: (intent) {
         final CodeAutocompleteEditingValue? value = _notifier?.value;
@@ -207,17 +239,23 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
         return intent;
       },
     );
+    onInvoke(intent) {
+      final CodeAutocompleteEditingValue? value = _notifier?.value;
+      if (value == null) {
+        return null;
+      }
+      _onAutocomplete?.call(value.autocomplete);
+      return intent;
+    }
     _selectAction = _CodeAutocompleteAction<CodeShortcutNewLineIntent>(
-      onInvoke: (intent) {
-        final CodeAutocompleteEditingValue? value = _notifier?.value;
-        if (value == null) {
-          return null;
-        }
-        _onAutocomplete?.call(value.autocomplete);
-        return intent;
-      },
-    );
+      onInvoke: onInvoke);
+    _selectAction2 = _CodeAutocompleteAction<CodeShortcutIntelliIntent>(
+      onInvoke: onInvoke);
     _buildAllKeyPromptWords();
+  }
+
+  void _initJavascript() {
+
   }
 
   @override
@@ -234,6 +272,7 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
       actions: {
         CodeShortcutCursorMoveIntent: _navigateAction,
         CodeShortcutNewLineIntent: _selectAction,
+        CodeShortcutIntelliIntent: _selectAction2,
       },
       child: widget.child
     );
@@ -245,11 +284,22 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     required double lineHeight,
     required CodeLineEditingValue value,
     required ValueChanged onAutocomplete,
+    bool buildedOutside = false,
+    IntelliData? prompts = null
   }) {
     dismiss();
-    final CodeAutocompleteEditingValue? autocompleteEditingValue = _buildAutocompleteOptions(value);
+    CodeAutocompleteEditingValue? autocompleteEditingValue
+              = _buildAutocompleteOptions(value, intelliData: prompts);
     if (autocompleteEditingValue == null) {
-      return;
+      if( !buildedOutside )
+        return;
+      else {
+        autocompleteEditingValue = CodeAutocompleteEditingValue(
+            word: '',
+            prompts: prompts!.prompts!,
+            index: 0
+        );
+      }
     }
     _notifier = ValueNotifier(autocompleteEditingValue);
     _onAutocomplete = onAutocomplete;
@@ -261,18 +311,18 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
     _navigateAction.setEnabled(true);
     _selectAction.setEnabled(true);
+    _selectAction2.setEnabled(true);
   }
 
-
-  void showIntelliSense({
-    required LayerLink layerLink,
-    required Offset position,
-    required double lineHeight,
-    required CodeLineEditingValue value,
-    required ValueChanged onAutocomplete,
-  }) {
-
-  }
+  // void showIntelliSense({
+  //   required LayerLink layerLink,
+  //   required Offset position,
+  //   required double lineHeight,
+  //   required CodeLineEditingValue value,
+  //   required ValueChanged onAutocomplete,
+  // }) {
+  //
+  // }
 
   void dismiss() {
     _notifier = null;
@@ -281,6 +331,7 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     _overlayEntry = null;
     _navigateAction.setEnabled(false);
     _selectAction.setEnabled(false);
+    _selectAction2.setEnabled(false);
   }
 
   void _buildAllKeyPromptWords() {
@@ -351,7 +402,118 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
 
   }
 
-  CodeAutocompleteEditingValue? _buildAutocompleteOptions(CodeLineEditingValue value) {
+  // int getNextScopeLine() {
+  //
+  // }
+
+  Scope? findScope(ScopeArea scopeArea, int line) {
+    Scope? scope;
+    for (final area in scopeArea.children) {
+      if (area.scope.line <= line && area.scope.endLine >= line) {
+        scope = area.scope;
+        break;
+      }
+      if( area.children.length>0 ) {
+        scope = findScope(area, line);
+        if( null!=scope )
+          break;
+      }
+    }
+    return scope;
+  }
+
+  Scope? findParent(Node scope) {
+    if( null!=scope.parent ) {
+      if( scope.parent is Scope ) {
+        return scope.parent as Scope;
+      } else {
+        return findParent(scope.parent!);
+      }
+    }
+    return null;
+  }
+
+  void buildJsCodePrompt(Scope scope, List<CodePrompt> keywordPrompt) {
+    final envs = scope.environment.toList();
+    if( envs.contains('arguments') ) {
+      envs.remove('arguments');
+    }
+    for( var i=0; i<envs.length; i++ ) {
+      final keyword = envs[i];
+      final node = scope.variables.elementAt(i).$2;
+      if( node is FunctionNode ) {
+        final params = Map<String, String>.fromIterable(node.params,
+            key: (param) => param.value,
+            value: (param) => param.value);
+
+        keywordPrompt.add(CodeFunctionPrompt(word: keyword, type: '', parameters: params));
+      } else {
+        keywordPrompt.add(CodeFieldPrompt(word: keyword, type: ''));
+      }
+    }
+
+    if( null!=scope.parent ) {
+      final parentScope = findParent(scope);
+      if( null!=parentScope )
+        buildJsCodePrompt(parentScope, keywordPrompt);
+    }
+  }
+
+  void buildJsPropertyPrompt(Scope scope, List<CodePrompt> keywordPrompt, String? word) {
+    final target = scope.variables.toList().firstWhereOrNull((el) => el.$1 == word);
+
+    if( null==target && null!=scope.parent ) {
+      final parentScope = findParent(scope);
+      if( null!=parentScope )
+        buildJsPropertyPrompt(parentScope, keywordPrompt, word);
+    } else {
+      var node = target?.$2;
+      if( node is VariableDeclarator ) {
+        node = node as VariableDeclarator;
+        if (null != node && node.init is ObjectExpression) {
+          final init = node.init as ObjectExpression;
+          init?.properties.forEach((prop) {
+            if( prop is SpreadElement ) {
+              buildJsPropertyPrompt(scope, keywordPrompt, (prop as SpreadElement).argument.value);
+            }
+            else if (prop.value is FunctionExpression) {
+              final fNode = (prop.value as FunctionExpression).function;
+              final params = Map<String, String>.fromIterable(fNode.params,
+                  key: (param) => param.value,
+                  value: (param) => param.value);
+              keywordPrompt.add(CodeFunctionPrompt(word: prop.nameString, type: '', parameters: params));
+            }
+            else if (prop.value is LiteralExpression) {
+              keywordPrompt.add(CodeFieldPrompt(word: prop.nameString, type: ''));
+            }
+          });
+        }
+      }
+    }
+  }
+
+  List<CodePrompt> makeJsCodePrompt(Program? ast, int line, {String? word, bool isProperties=false}) {
+    final keywordPrompt = <CodePrompt>[];
+
+    if (null == ast?.scopeArea)
+      return keywordPrompt;
+    ScopeArea scopeArea = ast!.scopeArea!;
+    if( isProperties ) {
+      buildJsPropertyPrompt(
+          findScope(scopeArea, line) ?? ast, keywordPrompt, word);
+    }
+    else {
+      buildJsCodePrompt(findScope(scopeArea, line) ?? ast, keywordPrompt);
+      widget.controller.objetsInfo.forEach((obj) => keywordPrompt.add(CodeKeywordPrompt(word: obj.$1)));
+    }
+
+    return keywordPrompt;
+  }
+
+  CodeAutocompleteEditingValue? _buildAutocompleteOptions(
+      CodeLineEditingValue value,
+      {IntelliData? intelliData}) {
+
     final String text = value.codeLines[value.selection.extentIndex].text;
     final Characters charactersBefore = text.substring(0, value.selection.extentOffset).characters;
     if (charactersBefore.isEmpty) {
@@ -363,18 +525,46 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
       return null;
     }
     // TODO Should check operator `->` for some languages like c/c++
-    final Iterable<CodePrompt> prompts;
-    final String word;
-    if (charactersBefore.takeLast(1).string == '.') {
+    final prompts = <CodePrompt>[];
+    var word = '';
+
+    final ast = (widget.child as CodeEditor).controller.AST;
+    //final vars = ast?.variables.toList();
+    if( null!=intelliData && null!=intelliData.prompts) {
+      prompts.addAll(intelliData.prompts!);
+      widget.releatedPrompts[intelliData.name] = intelliData.prompts!;
+    } else
+    if (null==intelliData && charactersBefore.takeLast(1).string == '.') {
       word = '';
       int start = charactersBefore.length - 2;
-      for (; start >= 0; start--) {
-        if (!charactersBefore.elementAt(start).isValidVariablePart) {
-          break;
+      if( !charactersBefore.elementAt(0).isNumeric ) {
+        for (; start >= 0; start--) {
+          if (!charactersBefore
+              .elementAt(start)
+              .isValidVariablePart) {
+            break;
+          }
         }
       }
       final String target = charactersBefore.getRange(start + 1, charactersBefore.length - 1).string;
-      prompts = widget.releatedPrompts[target] ?? const [];
+      if( null != intelliData ) {
+        if( intelliData.name == target ) {
+          widget.releatedPrompts[target] = intelliData.prompts!;
+        }
+      }
+
+      if( null==widget.releatedPrompts[target] ) {
+        var propertyPrompt = makeJsCodePrompt(ast, value.selection.baseIndex + 1, word: target, isProperties: true);
+        if( propertyPrompt.isNotEmpty ) {
+          widget.releatedPrompts[target] = propertyPrompt;
+        }
+      }
+      prompts.addAll(widget.releatedPrompts[target] ?? const []);
+
+      /* find properties(or method) of object */
+      if( prompts.isEmpty && null==intelliData ) {
+        widget.controller.intelliSense.add(IntelliData(target));
+      }
     } else {
       int start = charactersBefore.length - 1;
       for (; start >= 0; start--) {
@@ -386,6 +576,7 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
       if (word.isEmpty) {
         return null;
       }
+
       if (start > 0 && charactersBefore.elementAt(start) == '.') {
         final int mark = start;
         for (start = start - 1; start >= 0; start--) {
@@ -394,15 +585,19 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
           }
         }
         final String target = charactersBefore.getRange(start + 1, mark).string;
-        prompts = widget.releatedPrompts[target]?.where(
+        prompts.addAll(widget.releatedPrompts[target]?.where(
           (prompt) => prompt.word.startsWith(word) && prompt.word != word
-        ) ?? const [];
+        ).toList() ?? const []);
       } else {
-        prompts = _allKeyPromptWords.where(
+        var keywordPrompt = makeJsCodePrompt(ast, value.selection.baseIndex + 1, word: word);
+        final temp = _allKeyPromptWords.toList();
+        keywordPrompt =[...keywordPrompt,...temp];
+        prompts.addAll(keywordPrompt.where(
           (prompt) => prompt.word.startsWith(word) && prompt.word != word
-        );
+        ).toList() ?? const []);
       }
     }
+
     if (prompts.isEmpty) {
       return null;
     }
@@ -490,7 +685,12 @@ extension _CodeAutocompleteStringExtension on String {
   bool get isValidVariablePart {
     final int char = codeUnits.first;
     return (char >= 65 && char <= 90) || (char >= 97 && char <= 122) ||
-        (char == 95 || char == 36);
+           (char >= 48 && char <= 57) || (char == 95 || char == 36);
+  }
+
+  bool get isNumeric {
+    final int char = codeUnits.first;
+    return ( char >= 48 && char <= 57 );
   }
 
 }

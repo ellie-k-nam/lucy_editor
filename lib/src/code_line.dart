@@ -70,6 +70,10 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
     CodeLineOptions options = const CodeLineOptions()
   ]) => _CodeLineEditingControllerImpl.fromTextAsync(text, options);
 
+  void hideIntelliSense();
+
+  Program? get AST;
+
   bool get disposed;
 
   bool get isSaved;
@@ -263,6 +267,12 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
   /// Extend the selection to a direction.
   void extendSelection(AxisDirection direction);
 
+  /// Extend the selection to the backward word.
+  void extendSelectionToWordBackward();
+
+  /// Extend the selection to the forward word.
+  void extendSelectionToWordForward();
+
   /// Extend the selection to the start of current line.
   void extendSelectionToLineStart();
 
@@ -385,7 +395,15 @@ abstract class CodeLineEditingController extends ValueNotifier<CodeLineEditingVa
 
   StreamController<IntelliData> get intelliData;
 
-  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink);
+  StreamController<bool> get reqObjetInfo;
+
+  List<(String, String)> get objetsInfo;
+
+  void set objetsInfo(value);
+
+  void showIntelliSense();
+
+  set startHandleLayerLink(LayerLink value);
 }
 
 class CodeLine {
@@ -488,7 +506,6 @@ class CodeLine {
     }
     return codeLines;
   }
-
 }
 
 /// The current codes, selection, and composing state for editing a run of text.
@@ -505,6 +522,7 @@ class CodeLineEditingValue {
     required this.codeLines,
     this.selection = const CodeLineSelection.zero(),
     this.composing = TextRange.empty,
+    this.text = '',
   });
 
   const CodeLineEditingValue.empty() : this(
@@ -543,16 +561,19 @@ class CodeLineEditingValue {
   /// If the range represented by this property is [TextRange.empty], then the
   /// text is not currently being composed.
   final TextRange composing;
+  final String text;
 
   CodeLineEditingValue copyWith({
     CodeLines? codeLines,
     CodeLineSelection? selection,
     TextRange? composing,
+    String? text,
   }) {
     return CodeLineEditingValue(
       codeLines: codeLines ?? this.codeLines,
       selection: selection ?? this.selection,
-      composing: composing ?? this.composing
+      composing: composing ?? this.composing,
+      text: text ?? this.text
     );
   }
 
@@ -1178,13 +1199,17 @@ class CodeLineUtils {
 }
 
 class IntelliData {
-  final CodeLineEditingValue value;
-  final BuildContext context;
-  final LayerLink startHandleLayerLink;
+  final String name;
+  String? styleName;
+  final IntelliType type;
   final List<CodePrompt>? prompts;
   IntelliData(
-      this.value,
-      this.context,
-      this.startHandleLayerLink,
-      {this.prompts});
+       this.name,
+      {this.styleName, this.type = IntelliType.objet, this.prompts});
+}
+
+enum IntelliType {
+  objet,
+  property,
+  styleProperty
 }

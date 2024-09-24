@@ -183,6 +183,7 @@ class _CodeHighlightEngine {
 
   Highlight? _highlight;
   CodeHighlightTheme? _theme;
+  String _language = 'javascript';
 
   _CodeHighlightEngine(final CodeHighlightTheme? theme) {
     this.theme = theme;
@@ -203,7 +204,10 @@ class _CodeHighlightEngine {
       _highlight = highlight;
 
       if( modes.values.first.mode == langJavascript ) {
-        hi.highlight.registerLanguage('javascript', js.javascript);
+        hi.highlight.registerLanguage(_language, js.javascript);
+      } else if( modes.values.first.mode == langJson ) {
+        _language = 'json';
+        hi.highlight.registerLanguage(_language, json.json);
       }
     }
   }
@@ -231,6 +235,7 @@ class _CodeHighlightEngine {
       languages: modes.keys.toList(),
       maxSizes: modes.values.map((e) => e.maxSize).toList(),
       maxLineLengths: modes.values.map((e) => e.maxLineLength).toList(),
+      lang: _language,
     ));
     callback(result);
 
@@ -264,7 +269,7 @@ class _CodeHighlightEngine {
     if (!canHighlight) {
       result = payload.highlight.justTextHighlightResult(code);
     } else if (payload.languages.length == 1) {
-      final re = hi.highlight.parse(code, language: 'javascript');
+      final re = hi.highlight.parse(code, language: payload.lang);;
       result = convertReEditor(code, re, payload.highlight.emitter);
       //result = payload.highlight.highlight(code: code, language: payload.languages.first);
     } else {
@@ -374,6 +379,7 @@ class _HighlightPayload {
   final List<String> languages;
   final List<int> maxSizes;
   final List<int> maxLineLengths;
+  final String lang;
 
   const _HighlightPayload({
     required this.highlight,
@@ -381,6 +387,7 @@ class _HighlightPayload {
     required this.languages,
     required this.maxSizes,
     required this.maxLineLengths,
+    required this.lang,
   });
 
 }

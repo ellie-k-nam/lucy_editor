@@ -13,7 +13,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
   late bool _shouldNotUpdateResults;
 
   _CodeFindControllerImpl(this.controller, [CodeFindValue? value]) : super(value) {
-    controller.addListener(_updateResult);
+    //controller.addListener(_updateResult);
     _tasker = _IsolateTasker<_CodeFindPayload, CodeFindResult?>('CodeFind', _run);
     _findInputController = TextEditingController();
     _findInputController.addListener(_onFindPatternChanged);
@@ -27,8 +27,8 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
   @override
   void dispose() {
     super.dispose();
-    controller.removeListener(_updateResult);
-    _findInputFocusNode.removeListener(_requestFocus);;
+    //controller.removeListener(_updateResult);
+    // _findInputFocusNode.removeListener(_requestFocus);;
     _findInputController.removeListener(_onFindPatternChanged);
     _findInputController.dispose();
     _findInputFocusNode.dispose();
@@ -50,8 +50,8 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
 
   @override
   void processFocusListener() {
-    _findInputFocusNode.removeListener(_requestFocus);;
-    _findInputFocusNode.addListener(_requestFocus);
+    // _findInputFocusNode.removeListener(_requestFocus);;
+    // _findInputFocusNode.addListener(_requestFocus);
   }
 
   @override

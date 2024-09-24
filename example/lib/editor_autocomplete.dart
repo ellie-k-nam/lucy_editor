@@ -96,10 +96,11 @@ class AutoCompleteEditor extends StatefulWidget {
 class _AutoCompleteEditorState extends State<AutoCompleteEditor> {
 
   final CodeLineEditingController _controller = CodeLineEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
-    rootBundle.loadString('assets/code.dart').then((value) {
+    rootBundle.loadString('assets/code.js').then((value) {
       _controller.text = value;
     });
     super.initState();
@@ -107,7 +108,8 @@ class _AutoCompleteEditorState extends State<AutoCompleteEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return CodeAutocomplete(
+    return  CodeAutocomplete(
+      controller: _controller,
       builder: (context, notifier, onSelected) {
         return _DefaultCodeAutocompleteListView(
           notifier: notifier,
@@ -174,6 +176,17 @@ class _AutoCompleteEditorState extends State<AutoCompleteEditor> {
         commentFormatter: DefaultCodeCommentFormatter(singleLinePrefix: '//', multiLinePrefix: '//'),
       )
     );
+
+    // return KeyboardListener(
+    //   focusNode: _focusNode,
+    //   autofocus: true,
+    //   onKeyEvent: (event) {
+    //     if( event is KeyUpEvent && event.logicalKey == LogicalKeyboardKey.escape ) {
+    //       _controller.hideIntelliSense();
+    //     }
+    //   },
+    //   child: editor,
+    //   );
   }
 
 }

@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -16,9 +17,14 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight.dart' as hi;
 import 'package:highlight/languages/javascript.dart' as js;
+import 'package:highlight/languages/json.dart' as json;
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
+import 'package:lucy_editor/languages/json.dart';
 import 'package:lucy_editor/src/search/settings_controller.dart';
+
+import '../jsparser.dart';
 import '../languages/javascript.dart';
+import '../parsejs/ast.dart';
 import './re_highlight.dart';
 import 'analyzer/models/analysis_result.dart';
 import 'analyzer/models/error.dart';

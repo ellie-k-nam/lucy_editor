@@ -33,8 +33,12 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   bool _isSaved = true;
   final _intelliSense = StreamController<IntelliData>.broadcast();
   final _intelliData = StreamController<IntelliData>.broadcast();
+  final _reqObjetInfo = StreamController<bool>.broadcast();
+  var _objetsInfo = <(String, String)>[];
   StreamSubscription? _subscription;
   bool _disposed = false;
+  Program? _ast;
+  late LayerLink _startHandleLayerLink;
 
   _CodeLineEditingControllerImpl({
     required CodeLines codeLines,
@@ -48,6 +52,13 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
 
     _changeCallback = () {
       //if( _cache.isCodeChanged )
+      final newText = value.text;
+      if( newText.isNotEmpty && newText[newText.length -1 ].isValidVariablePart ) {
+        final code = value.codeLines.asString(options.lineBreak);
+        if( code.isNotEmpty ) {
+          _ast = parsejs(code, filename: 'javascript');
+        }
+      }
       _codeChangedCallback?.call();
       if( _isSaved && isCodeChanged )
         _isSaved = false;
@@ -92,6 +103,16 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     CodeLineUtils.toCodeLinesAsync(text ?? '').then((value) => controller.codeLines = value);
     return controller;
   }
+  @override
+  void hideIntelliSense() {
+    final autocompleteState =
+    _editorKey!.currentContext!.findAncestorStateOfType<_CodeAutocompleteState>();
+    autocompleteState?.dismiss();
+  }
+
+  @override
+  Program? get AST => _ast;
+
   @override
   bool get disposed => _disposed;
 
@@ -259,6 +280,9 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   @override
   set text(String value) {
     runRevocableOp(() {
+      if( value.isEmpty ) {
+        value = ' ';
+      }
       this.value = CodeLineEditingValue(
         codeLines: CodeLineUtils.toCodeLines(value)
       );
@@ -347,7 +371,8 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
         index: selection.startIndex,
         selection: newSelection,
       ),
-      composing: newComposing
+      composing: newComposing,
+      text: newValue.text,
     );
     _cache.markNewRecord(false);
     makeCursorCenterIfInvisible();
@@ -563,22 +588,23 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
 
   @override
   void moveCursorToPageUp() {
-    // TODO
+    var prevIndex = selection.baseIndex - 20;
+    selection = CodeLineSelection.collapsed(
+        index: prevIndex<0 ? 0 : prevIndex,
+        offset: 0
+    );
+    makeCursorVisible();
   }
 
   @override
   void moveCursorToPageDown() {
-    // TODO
-  }
+    var nextIndex = selection.baseIndex + 20;
 
-  @override
-  void moveCursorToWordBoundaryForward() {
-    // TODO
-  }
-
-  @override
-  void moveCursorToWordBoundaryBackward() {
-    // TODO
+    selection = CodeLineSelection.collapsed(
+        index: nextIndex,
+        offset: 0
+    );
+    makeCursorVisible();
   }
 
   @override
@@ -669,6 +695,139 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
         }
         break;
     }
+    makeCursorVisible();
+  }
+
+  // void adjustSelection(int offset, bool range) {
+  //   var baseIndex = selection.baseIndex;
+  //   var extentIndex = selection.extentIndex;
+  //   var baseOffset = selection.baseOffset;
+  //   var extentOffset = selection.extentOffset;
+  //   if( baseIndex > extentIndex ) {
+  //     (baseIndex, extentIndex) = (extentIndex, baseIndex);
+  //   }
+  //   if( baseOffset > extentOffset ) {
+  //     (baseOffset, extentOffset) = (extentOffset, baseOffset);
+  //   }
+  //   baseOffset = _wordForward ? (range ? baseOffset : offset) : (range ? offset : baseOffset);
+  //   extentOffset = _wordForward ? (range ? offset : extentOffset) : (range ? extentOffset : offset);
+  //   selection = selection.copyWith(
+  //       baseIndex: baseIndex,
+  //       extentIndex: extentIndex,
+  //       baseOffset: baseOffset,
+  //       extentOffset: extentOffset
+  //   );
+  // }
+
+  // bool get hasSelection => selection.baseIndex!=selection.extentIndex ||
+  //                          selection.baseOffset!=selection.extentOffset;
+
+  // int findWordOffsetExt(bool forward) {
+  //   final bOffset = selection.baseOffset;
+  //   final eOffset = selection.extentOffset;
+  //
+  //   final line = extentLine.text;
+  //   var skip = true;
+  //   var start = (forward ? bOffset : eOffset) - 1;
+  //   var end = (forward ? eOffset : bOffset) - 1;
+  //
+  //   for( int i=start; forward ? i<end : i>=end; forward ? i++ : i-- ) {
+  //     if( line[i]==' ') {
+  //       if( skip ) {
+  //         continue;
+  //       } else {
+  //         return i;
+  //       }
+  //     } else {
+  //       skip = false;
+  //     }
+  //   }
+  //   return -1;
+  // }
+
+  int findWordOffset(bool forward) {
+    final line = extentLine.text;
+    var skip = true;
+
+    var start = forward ? selection.extentOffset : selection.extentOffset - 1;
+    final end = forward ? line.length : 0;
+
+    if( start==end ) {
+      return start;
+    }
+    for( int i=start; forward ? i<end : i>=end; forward ? i++ : i-- ) {
+      if( line[i]==' ') {
+        if( skip ) {
+          continue;
+        } else {
+          return i;
+        }
+      } else {
+        skip = false;
+      }
+    }
+    return -1;
+  }
+
+  @override
+  void extendSelectionToWordBackward() {
+    final direction = selection.extentOffset - selection.baseOffset;
+
+    var offset = findWordOffset(false);
+    if( offset==-1 ) {
+      offset = direction > 0 ? selection.extentOffset : 0;
+    }
+    selection = selection.copyWith(
+        extentIndex: selection.extentIndex,
+        extentOffset: offset
+    );
+    makeCursorVisible();
+  }
+
+  @override
+  void extendSelectionToWordForward() {
+    final direction = selection.extentOffset - selection.baseOffset;
+
+    var offset = findWordOffset(true);
+    if( offset==-1 ) {
+      offset = direction > 0 ? extentLine.text.length : selection.baseOffset;
+    }
+    selection = selection.copyWith(
+        extentIndex: selection.extentIndex,
+        extentOffset: offset
+    );
+    makeCursorVisible();
+  }
+
+  @override
+  void moveCursorToWordBoundaryForward() {
+    final direction = selection.extentOffset - selection.baseOffset;
+
+    var offset = findWordOffset(true);
+    if( offset==-1 ) {
+      offset = extentLine.text.length;
+    }
+    selection = selection.copyWith(
+        extentIndex: selection.extentIndex,
+        baseOffset: offset,
+        extentOffset: offset
+    );
+    makeCursorVisible();
+  }
+
+  @override
+  void moveCursorToWordBoundaryBackward() {
+    final direction = selection.extentOffset - selection.baseOffset;
+
+    var offset = findWordOffset(false);
+    if( offset==-1 ) {
+      offset = 0;
+    }
+    selection = selection.copyWith(
+        extentIndex: selection.extentIndex,
+        baseOffset: offset,
+        extentOffset: offset
+    );
     makeCursorVisible();
   }
 
@@ -1702,10 +1861,21 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
   @override
   StreamController<IntelliData> get intelliData => _intelliData;
 
+  @override
+  StreamController<bool> get reqObjetInfo => _reqObjetInfo;
+
+  List<(String, String)> get objetsInfo => _objetsInfo;
+
+  void set objetsInfo(value) {
+    _objetsInfo.clear();
+    _objetsInfo = value;
+  }
+
   void _showIntelliSense(IntelliData data) {
 
+    if( null==_editorKey?.currentContext )  return;
     final autocompleteState =
-    data.context.findAncestorStateOfType<_CodeAutocompleteState>();
+      _editorKey!.currentContext!.findAncestorStateOfType<_CodeAutocompleteState>();
     if (autocompleteState == null) {
       return;
     }
@@ -1713,7 +1883,7 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
       autocompleteState.dismiss();
       return;
     }
-    final _CodeFieldRender? render = _editorKey?.currentContext?.findRenderObject() as _CodeFieldRender?;
+    final _CodeFieldRender? render = _editorKey!.currentContext!.findRenderObject() as _CodeFieldRender?;
     if (render == null) {
       autocompleteState.dismiss();
       return;
@@ -1723,24 +1893,151 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
       autocompleteState.dismiss();
       return;
     }
-    autocompleteState.showIntelliSense(
-        layerLink: data.startHandleLayerLink,
+
+    autocompleteState.show(
+        layerLink: _startHandleLayerLink,
         position: position,
         lineHeight: render.lineHeight,
         value: value,
+        buildedOutside: true,
+        prompts: data,
         onAutocomplete: (value) {
-          replaceSelection(value);
+          if( data.type != IntelliType.objet ) {
+            final line = extentLine.text;
+            final args = checkArgs(line);
+            var start = 0, end = 0;
+            if( data.type==IntelliType.property ) {
+              start = args[0].$1;
+              end = start + args[0].$2;
+            } else {
+              final pos = null==data.styleName ? 0 : 1;
+              start = args[pos].$1;
+              end = start + args[pos].$2;
+            }
+            final range = CodeLineSelection(
+                baseIndex: selection.baseIndex,
+                extentIndex: selection.extentIndex,
+                baseOffset: start,
+                extentOffset: end
+            );
+            if( null==data.styleName ) {
+              final propName = range.copyWith(
+                  baseOffset: args[1].$1,
+                  extentOffset: args[1].$1 + args[1].$2
+              );
+              replaceSelection('propName', propName);
+            }
+            replaceSelection('\'$value\'', range);
+          } else {
+            replaceSelection(value);
+          }
         }
     );
   }
 
+  List<(int, int)> checkArgs(String line) {
+    const keyword = 'Property(';
+    var args = line.substring(line.indexOf(keyword)+keyword.length);
+    args = args.substring(0, args.indexOf(')'));
+    final result = <(int, int)>[];
+    args.split(',').forEach((arg) {
+      final tmp = arg.trim();
+      result.add((line.indexOf(tmp), tmp.length));
+    });
+    return result;
+  }
+
+  String? findStyleName(String line) {
+    var styleName = line.substring(0, selection.baseOffset);
+    final comma = styleName.lastIndexOf(',');
+    if( -1!=comma ) {
+      styleName = styleName.substring(0, comma).trimRight();
+      styleName = styleName.substring(styleName.indexOf('(')+1);
+      final tmp = (styleName!='styleName') ? styleName : null;
+      return tmp?.replaceAll("'", '');
+    }
+    return null;
+  }
+
+  int countOfChar(String word, String pattern) {
+    var count = 0;
+    var pos = word.indexOf(pattern);
+    while( -1!=pos ) {
+      word = word.substring(pos+1);
+      count++;
+      pos = word.indexOf(pattern);
+    }
+    return count;
+  }
+
+  bool checkValidPos(String line, bool isProp) {
+    var bLine = line.substring(0, selection.baseOffset);
+    var param = bLine.substring(bLine.lastIndexOf('(')+1);
+    if( isProp ) {
+      if( -1!=param.indexOf(',') ) {
+        return false;
+      }
+    } else {
+      final count = countOfChar(param, ',');
+      if( count==2 ) {
+        return false;
+      } else if( count==1 ) {
+        param = param.substring(param.indexOf('(')+1, param.indexOf(','));
+        return param!='styleName';
+      }
+    }
+    return true;
+  }
+
   @override
-  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink) {
-    _intelliSense.add(IntelliData(value, context, startHandleLayerLink));
+  void showIntelliSense() {
+    if( null!=_editorKey?.currentContext ) {
+      final line = value.codeLines[value.selection.baseIndex].text;
+      var keyword = '';
+      String? styleName;
+      var intelliType = IntelliType.objet;
+
+      final prop = line.contains('.setProperty') ||
+                   line.contains('.getProperty');
+      final styleProp = line.contains('.setStyleProperty') ||
+                        line.contains('.getStyleProperty');
+      if( prop || styleProp ) {
+        if( checkValidPos(line, prop) ) {
+          var end = -1;
+          if( prop ) {
+            intelliType = IntelliType.property;
+            end = line.indexOf('.setProperty');
+            end = ( -1==end ) ? line.indexOf('.getProperty') : end;
+          } else if( styleProp ) {
+            intelliType = IntelliType.styleProperty;
+            end = line.indexOf('.setStyleProperty');
+            end = ( -1==end ) ? line.indexOf('.getStyleProperty') : end;
+            if( -1!=end ) {
+              styleName = findStyleName(line);
+            }
+          }
+          var start = end - 1;
+          if( !line[0].isNumeric ) {
+            for (; start >= 0; start--) {
+              if (!line[start].isValidVariablePart) {
+                break;
+              }
+            }
+          }
+          keyword = line.characters.getRange(start + 1, end).string;
+        }
+      }
+      _intelliSense.add(IntelliData(keyword, styleName: styleName, type: intelliType));
+    }
+
   }
 
   @override
   StreamController get timerStream => _timerStream;
+
+  @override
+  set startHandleLayerLink(LayerLink value) =>
+      _startHandleLayerLink = value;
 }
 
 class _CodeLineEditingCache {
@@ -1891,6 +2188,13 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
     }
     _delegate = value;
   }
+
+  @override
+  void hideIntelliSense() => _delegate.hideIntelliSense();
+
+  @override
+  Program? get AST => _delegate.AST;
+
   @override
   bool get disposed => _delegate.disposed;
 
@@ -2081,6 +2385,16 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
   @override
   void extendSelectionToLineStart() {
     _delegate.extendSelectionToLineStart();
+  }
+
+  @override
+  void extendSelectionToWordBackward() {
+    _delegate.extendSelectionToWordBackward();
+  }
+
+  @override
+  void extendSelectionToWordForward() {
+    _delegate.extendSelectionToWordForward();
   }
 
   @override
@@ -2306,10 +2620,24 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
   StreamController<IntelliData> get intelliData => _delegate.intelliData;
 
   @override
-  void showIntelliSense(BuildContext context, LayerLink startHandleLayerLink)
-    => _delegate.showIntelliSense(context, startHandleLayerLink);
+  StreamController<bool> get reqObjetInfo => _delegate.reqObjetInfo;
+
+  @override
+  List<(String, String)> get objetsInfo => _delegate.objetsInfo;
+
+  @override
+  void set objetsInfo(value) => _delegate.objetsInfo = objetsInfo;
+
+
+  @override
+  void showIntelliSense()
+    => _delegate.showIntelliSense();
 
   @override
   StreamController get timerStream => _delegate.timerStream;
+
+  @override
+  set startHandleLayerLink(LayerLink value) =>
+      _delegate.startHandleLayerLink = value;
 
 }

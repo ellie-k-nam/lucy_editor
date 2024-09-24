@@ -321,6 +321,8 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
       }
       widget.selectionOverlayController.hideHandle();
       widget.selectionOverlayController.hideToolbar();
+    } else {
+      widget.controller.reqObjetInfo.add(true);
     }
   }
 
@@ -383,6 +385,7 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
     if (autocompleteState == null) {
       return;
     }
+    print(' isCodeLineChanged $isCodeLineChanged');
     if (!isCodeLineChanged) {
       autocompleteState.dismiss();
       return;
@@ -398,9 +401,14 @@ class _CodeEditableState extends State<_CodeEditable> with AutomaticKeepAliveCli
     }
     final Offset? position = render.calculateTextPositionScreenOffset(widget.controller.selection.extent, true);
     if (position == null) {
+      print('position is null');
       autocompleteState.dismiss();
       return;
+    } else {
+      print('--------------> position is $position');
+
     }
+    final objetsInfo = widget.controller.objetsInfo;
     autocompleteState.show(
       layerLink: widget.startHandleLayerLink,
       position: position,

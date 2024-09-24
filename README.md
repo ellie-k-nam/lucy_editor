@@ -13,6 +13,8 @@
 - Line numbers and focus line builder.
 - Smart input.
 - Improve performance.
+- Support Javascript AST
+- More complicate AutoComplete for Javascript
 
 `Lucy_Editor` is not a secondary encapsulation based on `TextField`, but independently implements the layout, drawing, event processing, etc. It is specifically optimized for large texts, providing extremely high performance and fixed some issues of `TextField`.
 
@@ -28,7 +30,7 @@ Add the followings in `pubspec.yaml`.
 
 ```yaml
 dependencies:
-  lucy_editor: ^1.0.0
+  lucy_editor: ^1.0.7
 ```
 
 Like `TextField`, `Lucy_Editor` uses `CodeLineEditingController` as the controller. The following sample code creates the simplest editor component, which is not much different from `TextField`.

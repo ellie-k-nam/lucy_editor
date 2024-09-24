@@ -311,6 +311,7 @@ class _CodeEditorState extends State<CodeEditor> {
     _focusNode = widget.controller.focusNode = widget.focusNode ?? FocusNode();
 
     _editingController = widget._editingController!;
+    _editingController.startHandleLayerLink = _startHandleLayerLink;
     //_editingController.delegate =  widget.controller ?? CodeLineEditingController();
     _findController = widget.findController ?? CodeFindController(_editingController);
     //_editingController.findController = _findController;
@@ -506,7 +507,7 @@ class _CodeEditorState extends State<CodeEditor> {
           commentFormatter: widget.commentFormatter,
           overrideActions: widget.shortcutOverrideActions,
           readOnly: readOnly,
-          startHandleLayerLink: _startHandleLayerLink,
+          //startHandleLayerLink: _startHandleLayerLink,
           child: Focus(
             autofocus: autofocus,
             focusNode: _focusNode,

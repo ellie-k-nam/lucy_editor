@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucy_editor/lucy_editor.dart';
+import 'package:lucy_editor/styles/a11y-dark.dart';
+import 'package:lucy_editor/styles/atom-one-dark-reasonable.dart';
+import 'package:lucy_editor/styles/atom-one-dark.dart';
 import './find.dart';
 import './menu.dart';
 import 'package:lucy_editor/languages/json.dart';
@@ -29,6 +32,7 @@ class _JsonEditorState extends State<JsonEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final color = 0xff343232;
     return CodeEditor(
       style: CodeEditorStyle(
         codeTheme: CodeHighlightTheme(
@@ -37,8 +41,11 @@ class _JsonEditorState extends State<JsonEditor> {
               mode: langJson
             )
           },
-          theme: atomOneLightTheme
+          theme: a11YDarkTheme,//atomOneDarkTheme
+
         ),
+        backgroundColor: Color(color),
+        //textColor: Colors.amber,
       ),
       controller: _controller,
       wordWrap: false,

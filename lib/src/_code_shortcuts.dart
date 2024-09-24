@@ -69,7 +69,7 @@ class _CodeShortcutActions extends StatelessWidget {
   final CodeCommentFormatter? commentFormatter;
   final Map<Type, Action<Intent>>? overrideActions;
   final bool readOnly;
-  final LayerLink startHandleLayerLink;
+  //final LayerLink startHandleLayerLink;
   final Widget child;
 
   const _CodeShortcutActions({
@@ -78,7 +78,7 @@ class _CodeShortcutActions extends StatelessWidget {
     this.commentFormatter,
     required this.overrideActions,
     required this.readOnly,
-    required this.startHandleLayerLink,
+    //required this.startHandleLayerLink,
     required this.child,
   });
 
@@ -217,6 +217,14 @@ class _CodeShortcutActions extends StatelessWidget {
         editingController.extendSelection((intent as CodeShortcutSelectionExtendIntent).direction);
         break;
       }
+      case CodeShortcutSelectionExtendWordEdgeIntent: {
+        if ((intent as CodeShortcutSelectionExtendWordEdgeIntent).forward) {
+          editingController.extendSelectionToWordForward();
+        } else {
+          editingController.extendSelectionToWordBackward();
+        }
+        break;
+      }
       case CodeShortcutSelectionExtendLineEdgeIntent: {
         if ((intent as CodeShortcutSelectionExtendLineEdgeIntent).forward) {
           editingController.extendSelectionToLineEnd();
@@ -270,6 +278,7 @@ class _CodeShortcutActions extends StatelessWidget {
           findController?.close();
         } else {
           editingController.cancelSelection();
+          editingController.hideIntelliSense();
         }
         break;
       }
@@ -283,7 +292,7 @@ class _CodeShortcutActions extends StatelessWidget {
         break;
       }
       case CodeShortcutIntelliSenseIntent: {
-        editingController.showIntelliSense(context, startHandleLayerLink);
+        editingController.showIntelliSense();
       }
     }
     return intent;
