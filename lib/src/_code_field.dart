@@ -806,9 +806,9 @@ class _CodeFieldRender extends RenderBox implements MouseTrackerAnnotation {
     if (paragraph == null) {
       return null;
     }
-    final Offset? offset = paragraph.getOffset(position);
+    Offset? offset = paragraph.getOffset(position);
     if (offset == null) {
-      return null;
+      return paragraph.getOffset(position.copyWith(offset: position.offset-1));
     }
     return offset + paragraph.offset - paintOffset;
   }

@@ -648,9 +648,26 @@ class Property extends Node {
   bool get isSetter => kind == 'set';
   bool get isAccessor => isGetter || isSetter;
 
-  String get nameString => key is Name
-      ? (key as Name).value
-      : (key as LiteralExpression).value.toString();
+  String get nameString {
+    if( key is Name ) {
+      return (key as Name).value;
+    } else if( key is LiteralExpression ) {
+      return (key as LiteralExpression).value.toString();
+    } else if( key is BinaryExpression ) {
+      final expr = key as BinaryExpression;
+      return getText(expr.left).trim() + getText(expr.right).trim();
+    }
+    return '';
+  }
+
+  String getText(Expression expr) {
+    if( expr is LiteralExpression ) {
+      return expr.value.toString();
+    } else if( expr is NameExpression ) {
+      return expr.name.value;
+    }
+    return '';
+  }
 
   /// Returns the value as a FunctionNode. Useful for getters/setters.
   FunctionNode get function => value as FunctionNode;

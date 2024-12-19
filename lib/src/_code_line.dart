@@ -1904,26 +1904,29 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
         onAutocomplete: (value) {
           if( data.type != IntelliType.objet ) {
             final line = extentLine.text;
-            final args = checkArgs(line);
+            final word = 'Property(';
+            final args = analysisArgs(line, line.substring(line.indexOf(word)+word.length));
+
             var start = 0, end = 0;
             if( data.type==IntelliType.property ) {
               start = args[0].$1;
-              end = start + args[0].$2;
+              end = args[0].$2;
             } else {
               final pos = null==data.styleName ? 0 : 1;
               start = args[pos].$1;
-              end = start + args[pos].$2;
+              end = args[pos].$2;
             }
+            //final ctrl = args
             final range = CodeLineSelection(
                 baseIndex: selection.baseIndex,
                 extentIndex: selection.extentIndex,
                 baseOffset: start,
                 extentOffset: end
             );
-            if( null==data.styleName ) {
+            if( null==data.styleName && args.length==2 && args[1].$1!=args[1].$2 ) {
               final propName = range.copyWith(
                   baseOffset: args[1].$1,
-                  extentOffset: args[1].$1 + args[1].$2
+                  extentOffset: args[1].$2
               );
               replaceSelection('propName', propName);
             }
@@ -1935,58 +1938,118 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     );
   }
 
-  List<(int, int)> checkArgs(String line) {
-    const keyword = 'Property(';
-    var args = line.substring(line.indexOf(keyword)+keyword.length);
-    args = args.substring(0, args.indexOf(')'));
-    final result = <(int, int)>[];
-    args.split(',').forEach((arg) {
-      final tmp = arg.trim();
-      result.add((line.indexOf(tmp), tmp.length));
-    });
-    return result;
-  }
+  // List<(int, int)> checkArgs(String line) {
+  //   const keyword = 'Property(';
+  //   var args = line.substring(line.indexOf(keyword)+keyword.length);
+  //   args = args.substring(0, args.indexOf(')'));
+  //   final result = <(int, int)>[];
+  //   args.split(',').forEach((arg) {
+  //     final tmp = arg.trim();
+  //     result.add((line.indexOf(tmp), tmp.length));
+  //   });
+  //   return result;
+  // }
 
-  String? findStyleName(String line) {
-    var styleName = line.substring(0, selection.baseOffset);
-    final comma = styleName.lastIndexOf(',');
-    if( -1!=comma ) {
-      styleName = styleName.substring(0, comma).trimRight();
-      styleName = styleName.substring(styleName.indexOf('(')+1);
-      final tmp = (styleName!='styleName') ? styleName : null;
-      return tmp?.replaceAll("'", '');
-    }
-    return null;
-  }
+  // String? findStyleName(String line) {
+  //   var styleName = line.substring(0, selection.baseOffset);
+  //   final comma = styleName.lastIndexOf(',');
+  //   if( -1!=comma ) {
+  //     styleName = styleName.substring(0, comma).trimRight();
+  //     styleName = styleName.substring(styleName.indexOf('(')+1);
+  //     final tmp = (styleName!='styleName') ? styleName : null;
+  //     return tmp?.replaceAll("'", '');
+  //   }
+  //   return null;
+  // }
 
-  int countOfChar(String word, String pattern) {
-    var count = 0;
-    var pos = word.indexOf(pattern);
-    while( -1!=pos ) {
-      word = word.substring(pos+1);
-      count++;
-      pos = word.indexOf(pattern);
-    }
-    return count;
-  }
+  // int countOfChar(String word, String pattern) {
+  //   var count = 0;
+  //   var pos = word.indexOf(pattern);
+  //   while( -1!=pos ) {
+  //     word = word.substring(pos+1);
+  //     count++;
+  //     pos = word.indexOf(pattern);
+  //   }
+  //   return count;
+  // }
 
-  bool checkValidPos(String line, bool isProp) {
-    var bLine = line.substring(0, selection.baseOffset);
-    var param = bLine.substring(bLine.lastIndexOf('(')+1);
-    if( isProp ) {
-      if( -1!=param.indexOf(',') ) {
-        return false;
+  // bool checkValidPos(String line, bool isProp) {
+  //   var bLine = line.substring(0, selection.baseOffset);
+  //   var param = bLine.substring(bLine.lastIndexOf('(')+1);
+  //   if( isProp ) {
+  //     if( -1!=param.indexOf(',') ) {
+  //       return false;
+  //     }
+  //   } else {
+  //     final count = countOfChar(param, ',');
+  //     if( count==2 ) {
+  //       return false;
+  //     } else if( count==1 ) {
+  //       param = param.substring(param.indexOf('(')+1, param.indexOf(','));
+  //       return param!='styleName';
+  //     }
+  //   }
+  //   return true;
+  // }
+
+  (int, int) nextArgInfo(int prevArg, String rest) {
+    var start = 0;
+    var end = 0;
+    var argStart = false;
+    for( var i=0; i<rest.length; i++ ) {
+      final ch = rest[i];
+      if( !argStart && ch==' ' ) {
+        start++;
+      } else if( ch==',' || (argStart&&ch==' ') ){
+        break;
+      } else {
+        if( !argStart ) {
+          argStart = true;
+        }
+        end++;
       }
+    }
+    return (prevArg + start + 1, prevArg + end+1);
+  }
+
+  List<(int, int)> analysisArgs(String line, String argStart) {
+    final args = argStart.split(',').where((a) => a.isNotEmpty).toList();
+    var result = <(int, int)>[];
+    var start = argStart.isEmpty ? line.length : line.indexOf(argStart);
+    // first not exist -> first arg
+    if( args.isEmpty ) {
+      result.add((start, start));
+
     } else {
-      final count = countOfChar(param, ',');
-      if( count==2 ) {
-        return false;
-      } else if( count==1 ) {
-        param = param.substring(param.indexOf('(')+1, param.indexOf(','));
-        return param!='styleName';
+      var commaCount = args.length>2 ? 2 : args.length;
+      var prev = 0;
+      for( var i=0; i<argStart.length; i++ ) {
+        final ch = argStart[i];
+        if( ch==',' ) {
+          commaCount--;
+          result.add((start, start+(i-prev)));
+          prev = i+1;
+          start += i+1;
+        } else if( ch==' ' ) {
+          prev++;
+          start++;
+        }
+        if( commaCount==0 || i==argStart.length-1 ) {
+          if( -1==argStart.indexOf(',') ) {
+            result.add((start, start+(i-prev)+1));
+
+          } else if( -1<line.indexOf('etStyleProperty') && result.length==1 ) {
+            final rest = argStart.substring(prev);
+            result.add(nextArgInfo(result.last.$2+1, rest));
+          }
+          break;
+        }
       }
     }
-    return true;
+    if( args.isNotEmpty && -1<line.indexOf('etStyleProperty') && result.length==1 ) {
+      result.add((result[0].$2+1, result[0].$2+1));
+    }
+    return result;
   }
 
   @override
@@ -1994,26 +2057,39 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
     if( null!=_editorKey?.currentContext ) {
       final line = value.codeLines[value.selection.baseIndex].text;
       var keyword = '';
+      var isFirstArg = true;
       String? styleName;
       var intelliType = IntelliType.objet;
+      var noIntelli = false;
 
       final prop = line.contains('.setProperty') ||
                    line.contains('.getProperty');
       final styleProp = line.contains('.setStyleProperty') ||
                         line.contains('.getStyleProperty');
       if( prop || styleProp ) {
-        if( checkValidPos(line, prop) ) {
+        final word = 'Property(';
+        final args = analysisArgs(line, line.substring(line.indexOf(word)+word.length));
+
+        //if( prop&&args.length==1 || styleProp&&args.length==2 ) {
+          final pos = value.selection.baseOffset;
+          isFirstArg = args[0].$2==0 || ( args[0].$1 <= pos && args[0].$2 >= pos );
+          if( args.length==2 && args[1].$1==args[1].$2 ) {
+            isFirstArg = args[1].$2 >= pos;
+          }
           var end = -1;
           if( prop ) {
             intelliType = IntelliType.property;
             end = line.indexOf('.setProperty');
             end = ( -1==end ) ? line.indexOf('.getProperty') : end;
+            noIntelli = ( args[0].$2!=0 && args[0].$2 < pos );
           } else if( styleProp ) {
             intelliType = IntelliType.styleProperty;
             end = line.indexOf('.setStyleProperty');
             end = ( -1==end ) ? line.indexOf('.getStyleProperty') : end;
-            if( -1!=end ) {
-              styleName = findStyleName(line);
+            noIntelli = ( args.last.$2!=0 && args.last.$2 < pos );
+            if( -1!=end && !isFirstArg && !noIntelli ) {
+              styleName = line.substring(args[0].$1, args[0].$2).replaceAll("'", '');
+              styleName = styleName=='styleName' ? null : styleName;
             }
           }
           var start = end - 1;
@@ -2025,8 +2101,9 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
             }
           }
           keyword = line.characters.getRange(start + 1, end).string;
-        }
+        //}
       }
+      if( styleProp && !isFirstArg && null==styleName || noIntelli ) return;
       _intelliSense.add(IntelliData(keyword, styleName: styleName, type: intelliType));
     }
 

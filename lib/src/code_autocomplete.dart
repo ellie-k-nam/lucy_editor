@@ -402,14 +402,10 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
 
   }
 
-  // int getNextScopeLine() {
-  //
-  // }
-
   Scope? findScope(ScopeArea scopeArea, int line) {
     Scope? scope;
     for (final area in scopeArea.children) {
-      if (area.scope.line <= line && area.scope.endLine >= line) {
+      if (area.scope.line <= line && area.scope.endLine > line) {
         scope = area.scope;
         break;
       }
@@ -476,6 +472,9 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
             if( prop is SpreadElement ) {
               buildJsPropertyPrompt(scope, keywordPrompt, (prop as SpreadElement).argument.value);
             }
+            else if( (prop.key is Name) && (prop.key as Name).value=='__proto__' ) {
+               buildJsPropertyPrompt(scope, keywordPrompt, (prop.value as NameExpression ).name.value);
+            }
             else if (prop.value is FunctionExpression) {
               final fNode = (prop.value as FunctionExpression).function;
               final params = Map<String, String>.fromIterable(fNode.params,
@@ -484,12 +483,42 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
               keywordPrompt.add(CodeFunctionPrompt(word: prop.nameString, type: '', parameters: params));
             }
             else if (prop.value is LiteralExpression) {
-              keywordPrompt.add(CodeFieldPrompt(word: prop.nameString, type: ''));
+              if( prop.key is BinaryExpression ) {
+                final propName = getProperyName(scope, prop.key as BinaryExpression);
+                keywordPrompt.add(
+                    CodeFieldPrompt(word: propName, type: ''));
+              } else {
+                keywordPrompt.add(
+                    CodeFieldPrompt(word: prop.nameString, type: ''));
+              }
             }
           });
         }
       }
     }
+  }
+
+  String getProperyName(Scope scope, BinaryExpression expr) {
+    String getProp(Expression ex) {
+      if( ex is NameExpression ) {
+        return findValue(scope, ex.name.value);
+      } else {
+        return (ex as LiteralExpression).value.toString();
+      }
+      return '';
+    }
+    return getProp(expr.left).trim() + getProp(expr.right).trim();
+  }
+
+  String findValue(Scope scope, String name) {
+    final target = scope.variables.toList().firstWhereOrNull((el) => el.$1 == name);
+    if( null==target && null!=scope.parent ) {
+      final parentScope = findParent(scope);
+      if( null!=parentScope )
+        findValue(parentScope, name);
+    }
+    final expr = (target?.$2 as VariableDeclarator).init as LiteralExpression;
+    return expr.value.toString();
   }
 
   List<CodePrompt> makeJsCodePrompt(Program? ast, int line, {String? word, bool isProperties=false}) {
@@ -508,6 +537,49 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     }
 
     return keywordPrompt;
+  }
+
+  List<CodePrompt> makeThisCodePrompt(ScopeArea scopeArea, int line) {
+    final thisIs = <CodePrompt>[];
+    final scope = findScope(scopeArea, line);
+    ((null!=scope) ? scope : (scopeArea.scope as Scope))
+        .environment.forEach((v) => thisIs.add(CodeKeywordPrompt(word: v)));
+    return thisIs;
+  }
+
+  String  findThisObject(ScopeArea scopeArea, int line) {
+    var result = '';
+    var funLine = -1;
+    final scope = findScope(scopeArea, line);
+
+    Type? lookupParent(Node expr, {bool? funType}) {
+      if( expr is VariableDeclaration ) {
+        return ObjectExpression;
+      } else if( expr is Program ) {
+        return (null==funType) ? null :
+                funType ? FunctionDeclaration : FunctionExpression;
+      } else if( null==expr.parent ) {
+        return null;
+      }
+      return lookupParent(expr.parent!, funType: funType);
+    }
+
+    if( null!=scope ) {
+      bool? funType;
+      if( scope is FunctionNode ) {
+        funType = scope.parent is FunctionDeclaration;
+      }
+      final type = lookupParent(scope!, funType: funType);
+      if( type==ObjectExpression ) {
+        var parent = scope!.parent as Node;
+        while( parent is! VariableDeclaration ) {
+          parent = parent.parent as Node;
+        }
+        result = parent.declarations.first.name.value;
+      }
+    }
+
+    return result;
   }
 
   CodeAutocompleteEditingValue? _buildAutocompleteOptions(
@@ -532,9 +604,10 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
     //final vars = ast?.variables.toList();
     if( null!=intelliData && null!=intelliData.prompts) {
       prompts.addAll(intelliData.prompts!);
-      widget.releatedPrompts[intelliData.name] = intelliData.prompts!;
-    } else
-    if (null==intelliData && charactersBefore.takeLast(1).string == '.') {
+      if( intelliData.type==IntelliType.objet ) {
+        widget.releatedPrompts[intelliData.name] = intelliData.prompts!;
+      }
+    } else if (null==intelliData && charactersBefore.takeLast(1).string == '.') {
       word = '';
       int start = charactersBefore.length - 2;
       if( !charactersBefore.elementAt(0).isNumeric ) {
@@ -547,22 +620,31 @@ class _CodeAutocompleteState extends State<CodeAutocomplete> {
         }
       }
       final String target = charactersBefore.getRange(start + 1, charactersBefore.length - 1).string;
-      if( null != intelliData ) {
-        if( intelliData.name == target ) {
-          widget.releatedPrompts[target] = intelliData.prompts!;
+
+      var propertyPrompt = <CodePrompt>[];
+      if( target=='this' ) {
+        final thisResult = findThisObject(ast!.scopeArea!, value.selection.baseIndex);
+        if( thisResult.isEmpty ) {
+          propertyPrompt = makeThisCodePrompt(ast!.scopeArea!, value.selection.baseIndex);
+        } else {
+          buildJsPropertyPrompt(ast!, propertyPrompt, thisResult);
         }
+      }
+      else {
+        propertyPrompt = makeJsCodePrompt(
+                          ast, value.selection.baseIndex + 1, word: target,
+                          isProperties: true);
+      }
+      if( propertyPrompt.isNotEmpty ) {
+        widget.releatedPrompts[target] = propertyPrompt;
       }
 
-      if( null==widget.releatedPrompts[target] ) {
-        var propertyPrompt = makeJsCodePrompt(ast, value.selection.baseIndex + 1, word: target, isProperties: true);
-        if( propertyPrompt.isNotEmpty ) {
-          widget.releatedPrompts[target] = propertyPrompt;
-        }
+      if( target.isNotEmpty ) {
+        prompts.addAll(widget.releatedPrompts[target] ?? const []);
       }
-      prompts.addAll(widget.releatedPrompts[target] ?? const []);
 
       /* find properties(or method) of object */
-      if( prompts.isEmpty && null==intelliData ) {
+      if( prompts.isEmpty && null==intelliData && target.isNotEmpty ) {
         widget.controller.intelliSense.add(IntelliData(target));
       }
     } else {

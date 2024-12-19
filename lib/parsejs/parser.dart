@@ -291,7 +291,7 @@ class Parser {
       next(); // skip colon
       Node name = makePropertyName(nameTok);
       Expression value = parseAssignment();
-      return new Property(name, value)
+      return Property(name, value)
         ..start = start
         ..end = endOffset
         ..line = line;
@@ -306,30 +306,43 @@ class Parser {
       int lparen = token?.startOffset??0;
       List<Name> params = parseParameters();
       BlockStatement body = parseFunctionBody();
-      Node value = new FunctionNode(null, params, body)
+      Node value = FunctionNode(null, params, body)
         ..start = lparen
         ..end = endOffset
         ..line = name.line
         ..endLine = body.endLine;
-      return new Property(name, value, kind)
+      return Property(name, value, kind)
         ..start = start
         ..end = endOffset
         ..line = kindTok?.line??0;
-    } else if( nameTok?.type == Token.NAME && token?.type==Token.LPAREN ) {
+    }
+    else if( nameTok?.type == Token.NAME && token?.type==Token.LPAREN ) {
       int line = nameTok?.line??0;
       Node name = makePropertyName(nameTok);
       FunctionNode func = parseFunction(inObject: true, nameTok: nameTok);
-      final value = FunctionExpression(func);
-      return new Property(name, value)
+      final value = FunctionDeclaration(func);
+      return Property(name, value)
         ..start = start
         ..end = endOffset
         ..line = line;
-    } else if( nameTok?.type==Token.DOT && token?.type==Token.DOT ) {
+    }
+    else if( nameTok?.type==Token.DOT && token?.type==Token.DOT ) {
       nameTok = next();
       if( token?.type==Token.DOT ) {
         consume(Token.DOT);
         return SpreadElement(makeName(token));
       }
+    }
+    else if( nameTok?.type==Token.LBRACKET &&
+        (token?.type==Token.NAME||token?.type==Token.STRING) ) {
+      int line = token?.line?? 0;
+      Expression name = parseBinary(Precedence.EXPRESSION, true);
+      next(); next(); // skip RBRACKET and colon
+      Expression value = parseAssignment();
+      return Property(name, value)
+        ..start = start
+        ..end = endOffset
+        ..line = line;
     }
     throw fail(expected: 'property', tok: nameTok);
   }

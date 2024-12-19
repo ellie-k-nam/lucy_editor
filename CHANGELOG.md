@@ -45,3 +45,7 @@
 
 * Support Javascript AST
 * More complicate AutoComplete for Javascript
+
+## 1.0.8
+
+* Buf fix

@@ -408,7 +408,7 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultMacCodeShortcutsAc
     SingleActivator(LogicalKeyboardKey.enter, meta: true, shift: true)
   ],
   CodeShortcutType.intelli: [
-    SingleActivator(LogicalKeyboardKey.tab)
+    SingleActivator(LogicalKeyboardKey.tab, shift: true)
   ],
   CodeShortcutType.transposeCharacters: [
     SingleActivator(LogicalKeyboardKey.keyT, control: true)
@@ -563,7 +563,7 @@ const Map<CodeShortcutType, List<ShortcutActivator>> _kDefaultCommonCodeShortcut
     SingleActivator(LogicalKeyboardKey.enter, control: true, shift: true)
   ],
   CodeShortcutType.intelli: [
-    SingleActivator(LogicalKeyboardKey.tab)
+    SingleActivator(LogicalKeyboardKey.tab, shift: true)
   ],
   CodeShortcutType.transposeCharacters: [
     SingleActivator(LogicalKeyboardKey.keyT, control: true)
