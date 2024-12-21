@@ -12,7 +12,7 @@ class Parser {
 
   Lexer? lexer;
   Token? token;
-
+  String _errMsg = '';
   /// End offset of the last consumed token (i.e. not the one in [token] but the one before that)
   int endOffset = 0;
 
@@ -20,12 +20,17 @@ class Parser {
     if (tok == null) tok = token!;
     if (message == null) {
       if (expected != null) {
-        message = "Expected $expected but found $tok";
+        _errMsg = "Expected $expected but found $tok";
       }else{
-        message = "Unexpected token $tok";}
+        _errMsg = "Unexpected token $tok";}
     }
     // throw new ParseError(
     //     message, filename, tok.line, tok.startOffset, tok.endOffset);
+  }
+
+  void emitError() {
+    throw new ParseError(
+        _errMsg, filename, token!.line, token!.startOffset, token!.endOffset);
   }
 
   /// Returns the current token, and scans the next one.
@@ -95,6 +100,9 @@ class Parser {
 
   List<Name> parseParameters() {
     consume(Token.LPAREN);
+    if( token?.type == Token.EOF ) {
+      emitError();
+    }
     List<Name> list = <Name>[];
     while (token?.type != Token.RPAREN) {
       if (list.isNotEmpty) {
