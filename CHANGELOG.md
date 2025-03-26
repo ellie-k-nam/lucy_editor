@@ -48,11 +48,14 @@
 
 ## 1.0.8
 
-* Buf fix
+* Bug fix
 
 ## 1.0.9
 
-* Buf fix
+* Bug fix
 
+## 1.0.10
+
+* Fix bug in find at script editor.
 
 
