@@ -61,7 +61,11 @@ class _CodeLineEditingControllerImpl extends ValueNotifier<CodeLineEditingValue>
           newText[newText.length - 1].isValidVariablePart) {
         final code = value.codeLines.asString(options.lineBreak);
         if (code.isNotEmpty) {
-          _ast = parsejs(code, filename: 'javascript');
+          try {
+            _ast = parsejs(code, filename: 'javascript');
+          } catch (err) {
+            print('parsejs : ${err.toString()}');
+          }
         }
       }
       _codeChangedCallback?.call();
@@ -2319,8 +2323,10 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
 
   @override
   void addListener(ui.VoidCallback listener) {
-    _listeners.add(listener);
-    _delegate.addListener(listener);
+    if (!_delegate.disposed) {
+      _listeners.add(listener);
+      _delegate.addListener(listener);
+    }
   }
 
   @override
@@ -2410,7 +2416,7 @@ class _CodeLineEditingControllerDelegate implements CodeLineEditingController {
 
   @override
   void dispose() {
-    _delegate.dispose();
+    //_delegate.dispose();
   }
 
   @override
