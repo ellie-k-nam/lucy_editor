@@ -105,7 +105,7 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
     } else {
       _findInputController.selection = TextSelection(
         baseOffset: 0,
-        extentOffset: _findInputController.text.length
+        extentOffset: 0,//_findInputController.text.length
       );
     }
     _findInputController.addListener(_onFindPatternChanged);
@@ -390,6 +390,12 @@ class _CodeFindControllerImpl extends ValueNotifier<CodeFindValue?> implements C
         );
       }
       findInputFocusNode.requestFocus();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        findInputController.value = findInputController.value.copyWith(
+          text: findInputController.text,
+          selection: TextSelection.collapsed(offset: findInputController.text.length),
+        );
+      });
     });
   }
 
