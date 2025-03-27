@@ -58,4 +58,8 @@
 
 * Fix bug in find at script editor.
 
+## 1.0.11
+
+* Bug fix
+
 

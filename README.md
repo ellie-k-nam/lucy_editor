@@ -30,7 +30,7 @@ Add the followings in `pubspec.yaml`.
 
 ```yaml
 dependencies:
-  lucy_editor: ^1.0.10
+  lucy_editor: ^1.0.11
 ```
 
 Like `TextField`, `Lucy_Editor` uses `CodeLineEditingController` as the controller. The following sample code creates the simplest editor component, which is not much different from `TextField`.
